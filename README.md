@@ -64,8 +64,7 @@ flowchart LR
     C -.loopback only.-> H[llama-server<br/>on this machine]
 ```
 
-**The rules decide what is dangerous.** `redpen/rules/catalog.py` is 37 rules in
-plain Python covering IP assignment, payment terms, liability, scope control and
+**The rules decide what is dangerous.** `redpen/rules/` is 65 rules in plain Python across three libraries covering IP assignment, payment terms, liability, scope control and
 exit. Each carries its own plain-English explanation, a counter-clause you can
 paste, and the sentence to say in the email. Every finding cites the clause, the
 page, and the verbatim words that fired — so you can check the tool's work
@@ -94,6 +93,24 @@ output is validated rather than trusted:
 | Refuses to match the requested format | format accepted loosely (bullets, prose, numbers); content checked strictly |
 | Engine not running / model returns junk | deterministic fallback for every role; the report is always complete |
 | Mislabels which model wrote it | source label reads the model that actually ran |
+
+## Document types
+
+RedPen classifies what it is reading and runs only the rules that make sense for it.
+An unscoped library will tell an intern they are missing a deposit clause and a
+late-payment interest rate -- true, worthless, and printed next to the real
+finding about their original certificates sitting in the employer's drawer.
+
+| Type | Detected from | Example findings |
+| --- | --- | --- |
+| **Services agreement** | contractor, SOW, invoice, milestones | pay-when-paid, Net 90, IP on creation |
+| **Offer letter / internship** | intern, stipend, appointment, notice period | unpaid trial days, certificates withheld, one-way notice |
+| **NDA** | confidential information, receiving party | indemnity hidden in clause 9, confidentiality that never ends |
+| **Not an agreement** | none of the above | refused: "an instruction list makes no promises" |
+
+Separately, unfilled fields -- `[Amount]`, `[city, state]`, `___% advance` -- are
+counted and shown as their own panel, and any finding whose trigger text is still
+a blank is demoted. A draft you have not finished is not a deal working against you.
 
 ## Adding your own rules
 
@@ -190,12 +207,12 @@ one-time price survivable for an indie tool.
 ## Tests
 
 ```bash
-python3 -m pytest -q            # 64 tests, no model needed
+python3 -m pytest -q            # 98 tests, no model needed
 python3 -m pytest -q -m slow    # adds a real local-model pass
 ```
 
-The suite asserts recall (36 traps in a hostile MSA), precision (zero false
-positives on a fair contract), negation handling ("payment is **not** contingent
+The suite asserts recall (36 traps in a hostile MSA, 19 in an internship offer
+letter, 11 in a one-way NDA), precision (zero false positives on a fair contract), negation handling ("payment is **not** contingent
 on receipt of funds" must not fire), role synonyms, page grounding through a PDF
 round-trip, and that every quoted piece of evidence exists verbatim in the
 source document.
@@ -205,7 +222,10 @@ source document.
 ```
 redpen/
   ingest.py       PDF/DOCX/text -> clauses with page + span grounding
-  rules/catalog.py  the 37-rule red-flag library
+  rules/catalog.py    freelance / B2B red flags
+  rules/employment.py offer letters and internships
+  rules/nda.py        confidentiality agreements
+  doctype.py          document typing and unfilled-field detection
   engine.py       matching, negation, evidence, deal-shape extraction, scoring
   llm.py          loopback-only OpenAI-compatible client + small-model hygiene
   narrate.py      brief, explanations, negotiation email, ambiguity pass
