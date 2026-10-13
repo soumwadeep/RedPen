@@ -167,29 +167,58 @@ def event_types(raw: str):
             current = None
 
 
+def collect(raw: str) -> dict[str, list[str]]:
+    """Group SSE payloads by event name, keeping order."""
+    out: dict[str, list[str]] = {}
+    for name, data in event_types(raw):
+        out.setdefault(name, []).append(data)
+    return out
+
+
 def iter_lines(response):
     for chunk in response.iter_text():
         yield chunk
 
 
 @pytest.mark.slow
-def test_full_model_layer_produces_gemma_output():
-    """Real Gemma pass: skip when no local engine is running."""
+def test_full_model_layer_produces_model_output():
+    """Real local-model pass: skip when no engine is running."""
     found = server.config.find_running_engine()
     if not found:
         pytest.skip("no local engine -- start llama-server or run `redpen`")
     tok = client.post("/api/sample/lumen_typical").json()["token"]
     raw = client.get(f"/api/narrate/{tok}").text
-    got = dict(event_types(raw))
+    got = collect(raw)
     ov = json.loads(got["overview"][-1])
-    assert ov["source"] in {"gemma", "library"}
+    assert ov["source"] in {"library", found["models"][0].split(":")[0]}
     email = json.loads(got["email"][-1])
-    assert email["source"] == "gemma", "Gemma should clear the faithfulness check"
-    assert "[your name]" in email["body"] or "your name" in email["body"].lower()
+    assert email["source"] != "template", "a running model should clear the faithfulness check"
+    assert "[your name]" in email["body"].lower()
     amb = json.loads(got["ambiguity"][-1])["items"]
-    numbers = {c["number"] for c in server._CACHE[tok]["analysis"]["contract"].clauses}
+    numbers = {c.number for c in server._CACHE[tok]["analysis"].contract.clauses}
     for item in amb:
         assert item["clause"] in numbers, "model cited a clause that does not exist"
+
+
+def test_source_label_names_the_model_that_ran():
+    """A report that says 'Gemma' while Qwen wrote it is a lie about provenance."""
+    from redpen.llm import LocalLLM
+    from redpen.narrate import _src
+
+    assert _src(LocalLLM(base_url="http://127.0.0.1:1/v1", model="qwen-2.5-1.5b")) == "qwen-2.5-1.5b"
+    assert _src(LocalLLM(base_url="http://127.0.0.1:1/v1", model="gemma-3-1b-it:latest")) == "gemma-3-1b-it"
+    assert _src(None) == "library"
+
+
+def test_findings_do_not_depend_on_the_model():
+    """The judgement is the rule library's, so swapping weights cannot move a
+    single finding. This is what makes 'bring your own model' honest."""
+    from redpen.engine import analyse
+
+    c = load(SAMPLES / "lumen_typical.txt")
+    first = [f.rid for f in analyse(c).findings]
+    second = [f.rid for f in analyse(c).findings]
+    assert first == second and len(first) > 5
 
 
 # --------------------------------------------------------------------------- #

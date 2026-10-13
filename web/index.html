@@ -469,7 +469,7 @@ function show(f){
 /* ---------- model stream ---------- */
 function stream(){
   if (modelRun) modelRun.close();
-  $('#t-model-state').innerHTML = '<span class="spin"></span>gemma 3 1b · local';
+  $('#t-model-state').innerHTML = '<span class="spin"></span>' + (A.engine?.model || 'local model') + ' · on this machine';
   window.NARR = {explain:{}};
   const url = new URL('/api/narrate/' + A.token, location.origin);
   modelRun = new EventSource(url);

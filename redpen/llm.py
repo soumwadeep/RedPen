@@ -101,29 +101,43 @@ class LocalLLM:
 # --------------------------------------------------------------------------- #
 
 _PREAMBLE = re.compile(
-    r"^(?:here(?:'|\u2019)s|below is|sure|certainly|ok(?:ay)?|here is)"
+    r"^(?:here(?:'|\u2019)s|below (?:is|are)|sure|certainly|of course|ok(?:ay)?|"
+    r"certainly|absolutely|here is|i (?:can|will|would)|note to|note:)"
     r"[^.!\n]{0,90}[.!:\n]", re.I)
 _BOLD_LABEL = re.compile(r"^\s*[\*\-_#]+\s*", re.S)
 
 
 def strip_preamble(text: str) -> str:
-    """A 1B instruct model loves saying 'Here's a three-line explanation:'.
-    Remove the first line if it is pure meta-commentary."""
+    """A 1B instruct model loves saying "Here's a three-line explanation:".
+
+    Small models open with meta-commentary, sometimes several lines of it, so
+    this peels leading filler until it reaches something that is the answer.
+    """
     text = text.strip()
-    m = _PREAMBLE.match(text)
-    if m:
+    for _ in range(3):
+        m = _PREAMBLE.match(text)
+        if not m:
+            break
         rest = text[m.end():].lstrip("\n ")
-        if rest:
-            return rest
+        if not rest:
+            break
+        text = rest
     return _BOLD_LABEL.sub("", text).strip()
 
 
 def labelled(text: str, keys: list[str]) -> dict[str, str]:
-    """Parse 'RISK: ...\\nWHY: ...' style output, tolerating markdown and case."""
+    """Parse "RISK: ..." style output, tolerating markdown and case.
+
+    Gemma writes `**RISK:**` as often as `RISK:`, and the colon can sit inside
+    or outside the emphasis, so the label pattern allows decoration on both
+    sides of it.
+    """
     out = {k.lower(): "" for k in keys}
     text = strip_preamble(text)
     pattern = "|".join(re.escape(k) for k in keys)
-    parts = re.split(rf"(?:^|\n)\s*[\*\-#]?\s*({pattern})\s*[:\-)]?\s*", text, flags=re.I)
+    parts = re.split(
+        rf"(?:^|\n)[ \t]*[*_#]{{0,2}}[ \t]*({pattern})"
+        rf"[ \t]*[*_#]{{0,2}}[ \t]*[:\-)]?[ \t]*", text, flags=re.I)
     if len(parts) >= 3:
         for i in range(1, len(parts) - 1, 2):
             key = parts[i].lower().strip()

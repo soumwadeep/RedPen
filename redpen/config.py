@@ -213,9 +213,16 @@ def start_engine(spec: ModelSpec | None = None, port: int = ENGINE_PORT,
 def state() -> dict:
     spec = active_model()
     engine = find_running_engine()
+
+    def entry(m: ModelSpec, with_path: bool = False) -> dict:
+        data = asdict(m) | {"present": m.present}
+        if with_path:
+            data["path"] = str(m.path)
+        return data
+
     return {
-        "model": asdict(spec) | {"present": spec.present, "path": str(spec.path)},
-        "models": [asdict(m) | {"present": m.present} for m in MODELS_AVAILABLE.values()],
+        "model": entry(spec, with_path=True),
+        "models": [entry(m, with_path=True) for m in MODELS_AVAILABLE.values()],
         "engine": engine,
         "offline_ready": bool(engine),
         "settings": load_settings(),

@@ -30,6 +30,14 @@ MAX_EXPLAIN = 3          # narrate the top N findings; the rest use library text
 MAX_AMBIGUITY = 3
 
 
+def _src(llm: LocalLLM | None) -> str:
+    """Which model actually wrote this. Never hard-coded: a swap that mislabels
+    its own output would make the provenance claim in the UI false."""
+    if llm is None:
+        return "library"
+    return (llm.model or "local").split(":")[0]
+
+
 # --------------------------------------------------------------------------- #
 # Shared context packing
 # --------------------------------------------------------------------------- #
@@ -95,7 +103,7 @@ def overview(llm: LocalLLM | None, a: Analysis) -> dict:
             return {"deal": got.get("deal") or fallback["deal"],
                     "worst": got["worst"],
                     "first": got.get("first") or fallback["first"],
-                    "source": "gemma"}
+                    "source": _src(llm)}
     except Exception:
         pass
     return fallback
@@ -175,11 +183,19 @@ def email_fallback(a: Analysis, fee: str = "the quoted fee") -> str:
     return "\n".join(lines)
 
 
-def _keywords(text: str, n: int = 3) -> list[str]:
-    """Distinctive words from a rule title, used to check coverage."""
+def _keywords(f: Finding, n: int = 3) -> list[str]:
+    """Distinctive words that identify this finding's subject.
+
+    Taken from the suggested wording rather than the headline, because a good
+    paraphrase of "You lose the work the moment you make it" will not reuse the
+    headline's words -- but it will talk about payment and deliverables.
+    """
     stop = {"your", "you", "the", "and", "for", "with", "not", "are", "is", "to",
-            "of", "on", "in", "a", "any", "all", "they", "them", "work", "client"}
-    words = [w for w in re.findall(r"[a-z]{4,}", text.lower()) if w not in stop]
+            "of", "on", "in", "a", "any", "all", "they", "them", "shall", "will",
+            "must", "may", "each", "both", "this", "that", "under", "from", "party",
+            "parties", "client", "contractor", "agreement"}
+    words = [w for w in re.findall(r"[a-z]{5,}", (f.fix + " " + f.ask).lower())
+             if w not in stop]
     return sorted(set(words), key=len, reverse=True)[:n]
 
 
@@ -196,28 +212,32 @@ def email_is_faithful(raw: str, items: list[tuple[Finding, str]]) -> bool:
     low = raw.lower()
     covered = 0
     for f, _loc in items:
-        kws = _keywords(f.title)
-        if not kws:
-            continue
-        if sum(k in low for k in kws) >= max(1, len(kws) // 2):
+        kws = _keywords(f)
+        if kws and any(k in low for k in kws):
             covered += 1
     needed = max(1, int(len(items) * 0.6))
     return covered >= needed
 
 
 _SIG = re.compile(
-    r"((?:best|thanks|thank you|kind regards|regards|sincerely|cheers|warm regards),?)"
-    r"\s*\n+\s*(?:[-*_]{0,3}\s*)?([A-Z][a-zA-Z]{1,14})\s*$")
+    r"((?:best|thanks|thank you|kind regards|regards|sincerely|cheers|many thanks"
+    r"|warm regards|best wishes),?)"
+    r"\s*\n+[ \t]*[-–—*_#]{0,3}[ \t]*"
+    r"([A-Z][a-zA-Z .'-]{0,20}?)"
+    r"[ \t]*(?:[-–—*_]{1,4})?[ \t]*$", re.I)
 
 
 def sanitize_signature(body: str) -> str:
-    """A 1B model will happily sign your email as 'Max'. Keep the closing,
-    replace the invented name with a placeholder the user must fill in."""
+    """A 1B model will happily sign your email as "Max", or "Max --".
+
+    Keep the closing, replace the invented name with a placeholder the user has
+    to fill in -- sending an email signed with a stranger's name is the kind of
+    small failure that would cost this product its credibility.
+    """
     m = _SIG.search(body.rstrip())
     if not m:
         return body
-    name = m.group(2)
-    if name.lower() in {"yours", "yourself"}:
+    if m.group(2).strip().lower() in {"yours", "yourself", "your name"}:
         return body
     return body[: m.start()] + f"{m.group(1).capitalize()},\n\n[your name]"
 
@@ -253,7 +273,7 @@ def negotiation_email(llm: LocalLLM | None, a: Analysis, tone: str = "warm") -> 
         except Exception:
             break
         if email_is_faithful(raw, items):
-            return {"body": sanitize_signature(raw), "source": "gemma", "count": len(items)}
+            return {"body": sanitize_signature(raw), "source": _src(llm), "count": len(items)}
     return fallback
 
 
