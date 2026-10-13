@@ -1,0 +1,99 @@
+INDEPENDENT CONTRACTOR AGREEMENT
+
+This Agreement is made between Bright Harbour Studio Ltd ("Client") and the
+contractor named in the Statement of Work ("Contractor").
+
+1. SERVICES AND INDEPENDENCE
+
+Contractor shall provide the services described in the Statement of Work
+attached as Schedule A. Contractor determines the method, hours and location of
+its work, is not subject to Client's internal policies, and may provide
+services to other clients provided it discloses any direct competitor named in
+writing for this project.
+
+2. FEES, DEPOSIT AND PAYMENT
+
+Client shall pay the fixed fee stated in Schedule A. A deposit of 40% of the
+fee is due on signature and before Contractor starts, and the balance is due
+within 14 days of the invoice date. Payment is not contingent on Client's
+receipt of funds from any third party. Invoices unpaid after 14 days accrue
+interest at 1.5% per month, and Contractor may suspend work on 7 days' written
+notice while an invoice remains overdue. Fees are exclusive of applicable taxes,
+which Client pays in addition where it is required to collect or withhold them.
+Reasonable project expenses over 50 USD approved in writing in advance are
+reimbursed on production of receipts.
+
+3. SCOPE, REVISIONS AND CHANGES
+
+Schedule A lists each Deliverable with objective acceptance criteria. The fee
+includes 2 rounds of consolidated revisions per Deliverable. Either party may
+raise a written change request stating the effect on fee and schedule; a change
+takes effect on written acceptance, and work ordered before acceptance is
+charged at the hourly rate in Schedule B. Deliverables not rejected in writing
+within 10 business days with stated reasons are deemed accepted and the invoice
+falls due.
+
+4. INTELLECTUAL PROPERTY
+
+Title to each Deliverable passes to Client upon Client's receipt of payment in
+full for that Deliverable. Until then Client holds a licence to use the
+Deliverable for internal review. Contractor retains all right, title and
+interest in its pre-existing materials, templates, libraries and tooling
+("Background IP") and grants Client a perpetual, non-exclusive, irrevocable
+licence to use Background IP as embedded in the Deliverables. Contractor's
+tools, source and working files are not Deliverables and may be provided as a
+separate paid service at the rates in Schedule B. Contractor may show
+reduced-resolution excerpts and the Client name in its portfolio, website and
+award entries after public launch. Contractor waives moral rights only to the
+extent necessary for Client to use the Deliverables as intended, and retains
+the right to be credited.
+
+5. LIABILITY
+
+Each party's total liability under this Agreement shall not exceed the fees paid
+or payable in the 12 months before the claim. Neither party is liable for
+indirect, incidental, special, consequential or punitive loss, or for lost
+profits or revenue. Contractor indemnifies Client against third-party claims
+that the Deliverables infringe IP rights, provided Client gives prompt written
+notice and Contractor controls the defence, and excluding claims arising from
+Client's modifications, materials or use. Contractor maintains professional
+liability insurance with limits of at least the fees paid under this Agreement.
+
+6. DELIVERY AND DELAY
+
+Dates in Schedule A are agreed in good faith. Where Contractor anticipates a
+delay it shall notify Client promptly and the parties shall agree revised dates.
+Client's sole remedy for delay attributable to Contractor is to cancel the
+affected milestone and pay for work performed to that date.
+
+7. TERM AND TERMINATION
+
+Either party may terminate this Agreement on 30 days' written notice. On any
+termination Client pays for all work performed to the termination date and for
+non-cancellable commitments already made, and retains Deliverables only on
+payment. Renewal requires both parties' written agreement and rates are reviewed
+at each renewal.
+
+8. CONFIDENTIALITY
+
+Confidential Information means information disclosed in writing and marked
+confidential, or information a reasonable person would understand to be
+confidential. It excludes general skills, knowledge and experience retained by
+Contractor, information that becomes public without breach, and information
+already lawfully held. Obligations continue for 5 years after termination, and
+indefinitely only for information that is a genuine trade secret.
+
+9. GOVERNING LAW AND DISPUTES
+
+Neither party may assign this Agreement without the other's written consent, not
+to be unreasonably withheld. Disputes are first escalated to senior
+representatives of each party for 14 days, and failing resolution are decided by
+the courts of the jurisdiction in which Contractor is established, or by
+small-claims procedure where the sum in dispute is below its threshold. Either
+party may seek interim relief where a breach occurs.
+
+10. GENERAL
+
+This Agreement, together with its Schedules, is the entire agreement. Each party
+acts reasonably and in good faith in exercising any discretion given to it
+here. If any provision is unenforceable the remainder continues in effect.
