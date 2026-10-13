@@ -36,6 +36,15 @@ And the test that matters most — a genuinely fair contractor agreement, which 
 
 A tool that cries wolf gets uninstalled the first time it wastes an evening on a good contract.
 
+And an internship offer letter, where the header reads `DOC OFFER LETTER OR EMPLOYMENT
+TERMS` and the amber panel counts the fields nobody has filled in yet:
+
+![Offer letter](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/shot-06-offer-letter.png)
+
+Different document, different questions. An unscoped library tells an intern they are
+missing a deposit clause; a scoped one tells them their original degree certificates
+are being held by the employer.
+
 ```bash
 git clone https://github.com/soumwadeep/RedPen.git && cd RedPen
 brew install llama.cpp
