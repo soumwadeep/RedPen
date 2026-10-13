@@ -84,7 +84,7 @@ story.
 | # | Time | Action | What it proves |
 |---|------|--------|----------------|
 | 1 | 0–12s | Terminal: type `redpen` and hit return. Watch it start and the browser open. | No login, no cloud, one command. |
-| 2 | 12–25s | Drag `samples/northgate_msa.pdf` onto the drop zone. | Findings appear instantly (~50 ms) before the model does anything. |
+| 2 | 12–25s | Drag `samples/northgate_msa.pdf` onto the drop zone. | Findings appear in ~20 ms, long before the model has written a word. |
 | 3 | 25–45s | Let the MODEL LAYER fill in. Click finding 1, scroll to the email. | Gemma writing a real negotiation email, live, in ~11s. |
 | 4 | 45–60s | Load `bright_harbour_fair` sample → score 0, "Nothing in the library matched". | It doesn't cry wolf. This is the shot that separates it from a toy. |
 

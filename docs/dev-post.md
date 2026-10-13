@@ -51,7 +51,7 @@ PyMuPDF extracts the text, clause segmentation recovers the numbering and keeps 
 
 That split isn't a hedge. A 1B model is not reliable enough to decide whether a clause is dangerous, and a rules engine is not good enough to write a persuasive email to a client. Each layer does the half it's actually competent at, and the report is complete even if the model is switched off entirely.
 
-Running it: Gemma 3 1B at Q4_K_M, 769 MB, loads in 2.3 seconds, sits at about 0.83 GB resident on an **8 GB Apple Silicon MacBook** with no GPU and no Docker. The deterministic pass takes ~50 ms. A full review with the model layer takes 11–17 seconds.
+Running it: Gemma 3 1B at Q4_K_M, 769 MB, loads in 2.3 seconds, sits at about 0.83 GB resident on an **8 GB Apple Silicon MacBook** with no GPU and no Docker. The 37-rule pass takes 12–28 ms on this machine (median 14 ms) after ~8 ms to parse the PDF. A full review including the model layer takes 11–17 seconds.
 
 ### The guard-rails came from watching the model fail
 
