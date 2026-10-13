@@ -17,7 +17,7 @@ import urllib.request
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
-HOME = Path(os.environ.get("REDPEN_HOME", Path.home / ".redpen"))
+HOME = Path(os.environ.get("REDPEN_HOME", Path.home() / ".redpen"))
 MODELS = HOME / "models"
 SETTINGS = HOME / "settings.json"
 

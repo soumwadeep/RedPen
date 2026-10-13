@@ -21,7 +21,8 @@ from .llm import LocalLLM, bullets, labelled, parse_json, sentences, strip_pream
 SYSTEM = (
     "You help freelancers understand contracts. You are not a lawyer and never "
     "claim to be. You write short, plain, specific sentences. You never invent "
-    "clause numbers or facts that were not given to you. You never restate the "
+    "clause numbers, names or facts that were not given to you: copy a company "
+    "or person's name exactly as written, or leave it out. You never restate the "
     "document back to me."
 )
 
@@ -108,16 +109,19 @@ def explain(llm: LocalLLM | None, a: Analysis, f: Finding) -> str:
     clause = a.contract.clause(f.evidence[0].cid) if f.evidence else None
     if llm is None:
         return f.why
-    quote = clause.snippet(300) if clause else "(term absent from the document)"
+    quote = clause.snippet(300) if clause else "(this term is absent from the document)"
+    # Anchoring on the finding title matters: without it a 1B model writes about
+    # whatever stands out in the clause instead of the problem we flagged.
     user = (
-        f"CLAUSE {clause.number if clause else '-'} says:\n{quote}\n\n"
-        f"A rule flagged this because: {f.why}\n\n"
-        "In two sentences, tell this freelancer what can actually go wrong for "
-        "them in this deal. Name the money or the time at risk. Do not repeat "
-        "the clause."
+        f"THE PROBLEM WE FLAGGED: {f.title}\n"
+        f"THE TERM ({clause.number if clause else '-'}): {quote}\n\n"
+        f"In exactly two sentences, explain what can go wrong for this freelancer "
+        f"because of {f.title.lower()}. Name the money or the time at risk. "
+        f"Stay on that problem only. Do not repeat the clause and do not describe "
+        f"any other clause."
     )
     try:
-        got = sentences(llm.chat(SYSTEM, user, max_tokens=120), limit=2)
+        got = sentences(llm.chat(SYSTEM, user, max_tokens=110), limit=2)
         if got and len(" ".join(got)) > 40:
             return " ".join(got)
     except Exception:
@@ -171,6 +175,53 @@ def email_fallback(a: Analysis, fee: str = "the quoted fee") -> str:
     return "\n".join(lines)
 
 
+def _keywords(text: str, n: int = 3) -> list[str]:
+    """Distinctive words from a rule title, used to check coverage."""
+    stop = {"your", "you", "the", "and", "for", "with", "not", "are", "is", "to",
+            "of", "on", "in", "a", "any", "all", "they", "them", "work", "client"}
+    words = [w for w in re.findall(r"[a-z]{4,}", text.lower()) if w not in stop]
+    return sorted(set(words), key=len, reverse=True)[:n]
+
+
+def email_is_faithful(raw: str, items: list[tuple[Finding, str]]) -> bool:
+    """Validate content, not format.
+
+    A 1B model writes a perfectly usable email as bullets, as a numbered list,
+    or as prose -- insisting on one shape would throw away good output. What
+    must not happen is the email quietly dropping or inventing asks, so we check
+    that most requested changes are actually represented.
+    """
+    if len(raw.split()) < 45:
+        return False
+    low = raw.lower()
+    covered = 0
+    for f, _loc in items:
+        kws = _keywords(f.title)
+        if not kws:
+            continue
+        if sum(k in low for k in kws) >= max(1, len(kws) // 2):
+            covered += 1
+    needed = max(1, int(len(items) * 0.6))
+    return covered >= needed
+
+
+_SIG = re.compile(
+    r"((?:best|thanks|thank you|kind regards|regards|sincerely|cheers|warm regards),?)"
+    r"\s*\n+\s*(?:[-*_]{0,3}\s*)?([A-Z][a-zA-Z]{1,14})\s*$")
+
+
+def sanitize_signature(body: str) -> str:
+    """A 1B model will happily sign your email as 'Max'. Keep the closing,
+    replace the invented name with a placeholder the user must fill in."""
+    m = _SIG.search(body.rstrip())
+    if not m:
+        return body
+    name = m.group(2)
+    if name.lower() in {"yours", "yourself"}:
+        return body
+    return body[: m.start()] + f"{m.group(1).capitalize()},\n\n[your name]"
+
+
 def negotiation_email(llm: LocalLLM | None, a: Analysis, tone: str = "warm") -> dict:
     fallback = {"body": email_fallback(a), "source": "template", "count": len(_ask_list(a))}
     if llm is None:
@@ -191,15 +242,18 @@ def negotiation_email(llm: LocalLLM | None, a: Analysis, tone: str = "warm") -> 
     user = (
         f"Write an email from a freelancer to their client asking for these "
         f"contract changes. {tone_line}\n"
-        f"Max 200 words. Number the changes and keep each to one or two "
-        f"sentences. Do not invent changes that are not in this list.\n\n{asks}"
+        f"Max 200 words. Cover every numbered change below, in your own words, "
+        f"as a list (bullets or numbers). Do not add changes that are not listed. "
+        f"Sign off with '[Your name]' -- never invent a person's name.\n\n{asks}"
     )
-    try:
-        raw = strip_preamble(llm.chat(SYSTEM, user, max_tokens=520))
-        if len(raw.split()) > 40 and re.search(r"1[.)]", raw):
-            return {"body": raw, "source": "gemma", "count": len(items)}
-    except Exception:
-        pass
+    for attempt in range(2):
+        try:
+            raw = strip_preamble(llm.chat(SYSTEM, user, max_tokens=480,
+                                          temperature=0.1 + 0.25 * attempt))
+        except Exception:
+            break
+        if email_is_faithful(raw, items):
+            return {"body": sanitize_signature(raw), "source": "gemma", "count": len(items)}
     return fallback
 
 
@@ -207,39 +261,58 @@ def negotiation_email(llm: LocalLLM | None, a: Analysis, tone: str = "warm") -> 
 # 4. Ambiguity pass -- the one thing patterns genuinely cannot see
 # --------------------------------------------------------------------------- #
 
+def _resolve_clause(a: Analysis, raw_value: str) -> str | None:
+    """Map the model's answer onto a clause that really exists.
+
+    Gemma 1B often answers with the vague *word* it spotted ("reasonable",
+    "promptly") instead of the clause number. Both are accepted, but a term that
+    appears in several clauses is ambiguous and gets dropped rather than
+    guessed at -- the user is shown a citation, so it has to be the right one.
+    """
+    val = str(raw_value or "").strip().lower().rstrip(".:)")
+    valid = {c.number: c.number for c in a.contract.clauses}
+    if val in valid:
+        return valid[val]
+    digits = re.search(r"\d+(?:\.\d+)*", val)
+    if digits and digits.group(0) in valid:
+        return digits.group(0)
+    if len(val) < 4:
+        return None
+    holders = [c.number for c in a.contract.clauses if val in c.text.lower()]
+    return holders[0] if len(holders) == 1 else None
+
+
 def ambiguities(llm: LocalLLM | None, a: Analysis, limit: int = MAX_AMBIGUITY) -> list[dict]:
     """Ask the model for vague or contradictory terms the rule library is not
     looking for, then validate every citation against clauses that exist.
 
-    Anything pointing at a clause number that is not in the document is
-    discarded. That is what makes it safe to show a small model's output to a
-    paying user.
+    Anything that cannot be resolved to one real clause is discarded. That is
+    what makes it safe to show a small local model's output to a paying user.
     """
     if llm is None:
         return []
-    valid = {c.number for c in a.contract.clauses}
     listing = "\n".join(f"{c.number}: {c.snippet(180)}" for c in a.contract.clauses[:26])
     user = (
-        "Below are clauses from a contract, each prefixed by its number.\n"
-        "List up to 3 clauses that are vague, contradictory, or missing a "
-        "definition a freelancer would need -- things like 'reasonable', "
-        "'as required', 'promptly', 'industry standard', undefined scope, or "
-        "two clauses that conflict.\n"
-        "Reply with JSON only: {\"items\": [{\"clause\": \"<number>\", "
-        "\"note\": \"<one short sentence>\"}]}\n"
-        "Use only numbers that appear below.\n\n"
+        "Below are clauses of a contract. Each line starts with that clause's number.\n"
+        "Find up to 3 clauses that are vague, undefined or contradictory: words like "
+        "'reasonable', 'promptly', 'as required', 'industry standard', an undefined "
+        "scope, or two clauses that disagree.\n"
+        "Answer with JSON only, exactly this shape:\n"
+        "{\"items\": [{\"clause\": \"3\", \"note\": \"one short sentence\"}]}\n"
+        "For clause, write only a number from the start of a line, or the single vague "
+        "word you found. Never invent a number that is not shown.\n\n"
         f"{listing}"
     )
     try:
-        data = parse_json(llm.chat(SYSTEM, user, max_tokens=400, json_mode=True))
+        data = parse_json(llm.chat(SYSTEM, user, max_tokens=420, json_mode=True))
         items = (data or {}).get("items") if isinstance(data, dict) else data
         out: list[dict] = []
         for it in items or []:
             if not isinstance(it, dict):
                 continue
-            num = str(it.get("clause", "")).strip().rstrip(".:")
-            note = str(it.get("note", "")).strip()
-            if num in valid and note:
+            note = str(it.get("note") or it.get("issue") or it.get("text") or "").strip()
+            num = _resolve_clause(a, it.get("clause") or it.get("number") or "")
+            if num and note and len(note) > 12:
                 out.append({"clause": num, "note": note})
             if len(out) >= limit:
                 break

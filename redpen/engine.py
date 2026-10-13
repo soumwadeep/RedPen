@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 
 from .ingest import Contract, normalise
 from .rules import all_rules
-from .rules.catalog import negated_at, rx
+from .rules.catalog import SEVERITY_LABEL, negated_at, rx
 
 # --------------------------------------------------------------------------- #
 # Absence rules: missing vs expressly refused
@@ -213,15 +213,23 @@ def deal_shape(contract: Contract) -> dict:
     }
 
     seen: set[str] = set()
-    for m in _MONEY.finditer(flow):
-        v = m.group(0).strip()
-        if v not in seen:
-            seen.add(v)
-            shape["amounts"].append(v)
-        if len(shape["amounts"]) >= 6:
+    # Only report figures that sit in a fee context: "expenses over 50 USD" is
+    # not the deal value, and showing it erodes trust in the whole panel.
+    for m in re.finditer(
+            r"([^.;]{0,70}?(?:fee|total|fixed|deposit|rate|price|invoice|charge)[^.;]{0,70}?)",
+            flow):
+        window = m.group(1)
+        for mm in _MONEY.finditer(window):
+            v = mm.group(0).strip()
+            if re.search(r"expense|over\s$|\bunder\b|threshold", window, re.I):
+                continue
+            if v not in seen:
+                seen.add(v)
+                shape["amounts"].append(v)
+        if len(shape["amounts"]) >= 4:
             break
 
-    rev = re.search(r"(\d{1,2})\s*(?:rounds?|iterations?)\s*(?:of|including)?\s*revisions?", flow)
+    rev = re.search(r"(\d{1,2})\s*(?:rounds?|iterations?)[^.]{0,34}revisions?", flow)
     if rev:
         shape["revision_rounds"] = int(rev.group(1))
     elif re.search(r"unlimited revisions", flow):

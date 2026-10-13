@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "redpen"
+version = "0.1.0"
+description = "Offline contract review for freelancers. Open weights, open rules, nothing leaves the laptop."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Soumwadeep Guha" }]
+keywords = ["contracts", "freelance", "local-llm", "privacy", "llama-cpp", "gemma"]
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn>=0.27",
+  "httpx>=0.27",
+  "pymupdf>=1.24",
+  "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+redpen = "redpen.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/soumwadeep/RedPen"
+
+[tool.setuptools]
+packages = ["redpen", "redpen.rules"]
+
+[tool.setuptools.package-data]
+redpen = ["../web/index.html"]
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: exercises the real local model (deselect with -m 'not slow')",
+]
+addopts = "-m 'not slow'"
+testpaths = ["tests"]

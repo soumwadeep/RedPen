@@ -295,16 +295,67 @@ def load(path: str | Path) -> Contract:
                     clauses=clauses, warnings=warnings)
 
 
+def sniff(data: bytes) -> str:
+    """File type from the bytes, not the name -- uploads arrive with either.
+
+    A browser can hand us "contract" with no extension, and a user can rename a
+    PDF to .txt; the magic bytes are the truth.
+    """
+    if data[:5] == b"%PDF-":
+        return "pdf"
+    if data[:2] == b"PK":
+        return "docx"
+    return "text"
+
+
+def load_bytes(name: str, data: bytes) -> Contract:
+    """Review an upload without ever writing it to disk.
+
+    A contract sitting in a temp folder is exactly the thing this tool exists to
+    avoid, so the browser's bytes go straight into memory and stay there.
+    """
+    kind = sniff(data)
+    label = Path(name).stem or "uploaded agreement"
+
+    if kind == "pdf":
+        doc = pymupdf.open(stream=data, filetype="pdf")
+        chunks = [page.get_text("text") for page in doc]
+        pages = doc.page_count
+        doc.close()
+        if not any(c.strip() for c in chunks):
+            raise DocumentTooShort(
+                "This PDF has no selectable text - it is a scan. RedPen does not "
+                "send pages to an OCR service. Export it with text, or paste the "
+                "clauses you want checked."
+            )
+        raw = "\n\n".join(chunks)
+    elif kind == "docx":
+        import io
+
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            xml = z.read("word/document.xml").decode("utf-8", "replace")
+        xml = re.sub(r"</w:p>", "\n", xml)
+        raw, pages = re.sub(r"<[^>]+>", "", xml), 1
+    else:
+        raw, pages = data.decode("utf-8", "replace"), 1
+
+    return _build(label, raw, pages, "uploaded (parsed in memory, not written to disk)")
+
+
 def load_text(name: str, raw: str) -> Contract:
     """Review pasted text -- the path a freelancer on a phone would use."""
+    return _build(name, raw, 1, "pasted text")
+
+
+def _build(name: str, raw: str, pages: int, source: str) -> Contract:
     if len(raw.strip()) < MIN_USEFUL_CHARS:
         raise DocumentTooShort(
-            "Paste the whole agreement. There is not enough text here to review."
+            "Paste or upload the whole agreement. There is not enough text here "
+            "to review."
         )
-    pages = 1
     clauses = segment(raw, pages)
     warnings: list[str] = []
     if len(clauses) < 3:
         warnings.append("Clause numbering was not detected; paragraph splits are approximate.")
-    return Contract(name=name, source="pasted text", text=raw, pages=pages,
+    return Contract(name=name, source=source, text=raw, pages=pages,
                     clauses=clauses, warnings=warnings)

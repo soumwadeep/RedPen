@@ -769,4 +769,6 @@ RULES: list[Rule] = [
 ABSENCE_RULES = [r for r in RULES if r.doc_scope]
 CLAUSE_RULES = [r for r in RULES if not r.doc_scope]
 
-SEVERITY_LABEL = {3: "stop", 2: "fix-before-signing", 1: "ask", 0: "note"}
+SEVERITY_LABEL = {3: "stop", 2: "fix", 1: "ask", 0: "note"}
+SEVERITY_LONG = {3: "do not sign like this", 2: "fix before signing",
+                 1: "worth asking", 0: "note only"}
