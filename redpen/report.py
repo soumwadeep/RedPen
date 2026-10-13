@@ -44,12 +44,19 @@ def to_markdown(a: Analysis, narration: dict | None = None) -> str:
         f"{len(d.text.split())} words",
         f"- **Findings:** {a.counts['stop']} stop, {a.counts['fix']} fix, "
         f"{a.counts['ask']} ask",
+        f"- **Document type:** {a.doc_type.label}",
         f"- **Stated terms:** {_shape_text(a)}",
         f"- **Reviewed:** {datetime.now():%Y-%m-%d %H:%M} · offline, on this machine",
         "",
         f"> {BAND_COPY[a.band]}",
         "",
     ]
+    if a.blanks.total:
+        out += [f"**{a.blanks.total} unfilled fields** -- this is a draft, not a deal yet: "
+                + ", ".join(f"[{f}]" for f in a.blanks.fields[:10]), ""]
+    if not a.doc_type.contractual:
+        out += ["This does not read as an agreement, so there is nothing to review. "
+                "RedPen scores promises; an instruction list makes none.", ""]
     ov = n.get("overview")
     if ov:
         out += ["## What this agreement is", "",

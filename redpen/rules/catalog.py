@@ -102,6 +102,7 @@ class Rule:
     none_of: list[str] = field(default_factory=list)
     where: object | None = None
     doc_scope: bool = False  # True = checked against the whole agreement
+    applies_to: str = "any"  # any | services | employment | nda
 
     def hits(self, flow: str) -> list[tuple[int, int]]:
         """Spans of the asserted offending language, negated mentions removed.
@@ -353,8 +354,12 @@ RULES: list[Rule] = [
         title="Expenses need prior approval that can be withheld",
         category="money", severity=1,
         any_of=[r"expenses.{0,60}(?:prior written approval|not reimbursed|at (?:your|contractor)'?s? cost)",
-                r"(?:no|not be reimbursable).{0,40}expense",
+                r"\bno\b[^.]{0,40}expense[^.]{0,30}reimburs",
+                r"\bnot\b[^.]{0,30}reimbursable[^.]{0,30}expense",
                 r"approval (?:may be withheld|is at (?:the )?client'?s discretion)"],
+        none_of=[r"incur[^.]{0,45}expense[^.]{0,45}without (?:prior )?approval",
+                 r"expenses are payable by (?:the )?client", r"reimburses? reasonable",
+                 r"pre-?approved"],
         why=("Fine if true, misleading if it is stated as 'expenses reimbursed' "
              "somewhere else. Stock footage, fonts, plugins and test devices "
              "are usually billed to the project, not absorbed."),
@@ -645,7 +650,9 @@ RULES: list[Rule] = [
         title="Disputes must be fought on their turf",
         category="terms", severity=2,
         any_of=[r"exclusive (?:jurisdiction|venue)", r"courts? of .{0,40}(?:shall have|exclusive)",
-                r"mandatory arbitration", r"binding arbitration", r"waiv\w+ .{0,30}class action"],
+                r"mandatory arbitration", r"binding arbitration",
+                r"resolved through arbitration", r"arbitration in [a-z]",
+                r"venue of arbitration", r"waiv\w+ .{0,30}class action"],
         why=("A $4,000 invoice is not worth flying to another country to "
              "enforce, which both sides know. Small-claims in your own "
              "jurisdiction is the practical remedy for individuals."),

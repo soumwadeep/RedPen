@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from . import doctype
 from .ingest import Contract, normalise
 from .rules import all_rules
 from .rules.catalog import SEVERITY_LABEL, negated_at, rx
@@ -97,6 +98,7 @@ class Finding:
     evidence: list[Evidence] = field(default_factory=list)
     missing: bool = False      # True = the protective term is absent
     denied: bool = False       # True = the term is present but expressly refused
+    placeholder: bool = False  # True = the trigger text is an unfilled blank
 
     @property
     def band(self) -> str:
@@ -130,6 +132,7 @@ class Finding:
             "ask": self.ask,
             "missing": self.missing,
             "denied": self.denied,
+            "placeholder": self.placeholder,
             "presence": self.presence,
             "pages": self.pages,
             "evidence": [e.to_dict() for e in self.evidence],
@@ -144,6 +147,8 @@ class Analysis:
     band: str
     shape: dict
     counts: dict
+    doc_type: doctype.DocType = field(default_factory=lambda: doctype.DocType("unknown", 0.0))
+    blanks: doctype.Placeholders = field(default_factory=doctype.Placeholders)
 
     def to_dict(self, include_text: bool = True) -> dict:
         return {
@@ -154,11 +159,16 @@ class Analysis:
                 "clauses": self.contract.clause_count,
                 "words": len(self.contract.text.split()),
                 "warnings": self.contract.warnings,
+                "type": self.doc_type.kind,
+                "type_label": self.doc_type.label,
+                "type_confidence": self.doc_type.confidence,
+                "contractual": self.doc_type.contractual,
             },
             "score": self.score,
             "band": self.band,
             "counts": self.counts,
             "shape": self.shape,
+            "blanks": self.blanks.to_dict(),
             "findings": [f.to_dict() for f in self.findings],
             "clauses": [c.to_dict() for c in self.contract.clauses] if include_text else [],
         }
@@ -271,7 +281,20 @@ def _band(score: int) -> str:
 # --------------------------------------------------------------------------- #
 
 def analyse(contract: Contract, extra_rules: list | None = None) -> Analysis:
-    rules = all_rules(extra_rules)
+    kind = doctype.classify(contract.text)
+    blanks = doctype.find_placeholders(contract.text)
+
+    if not kind.contractual:
+        # An onboarding checklist or a job description is not an agreement.
+        # Scoring one would manufacture findings out of prose that makes no
+        # promises, so the honest output is "nothing to review".
+        return Analysis(contract=contract, findings=[], score=0, band="clean",
+                        shape=deal_shape(contract),
+                        counts={"stop": 0, "fix": 0, "ask": 0, "total": 0},
+                        doc_type=kind, blanks=blanks)
+
+    rules = [r for r in all_rules(extra_rules)
+             if doctype.applies(r.applies_to, kind.kind)]
     clause_rules = [r for r in rules if not r.doc_scope]
     absence_rules = [r for r in rules if r.doc_scope]
 
@@ -326,6 +349,19 @@ def analyse(contract: Contract, extra_rules: list | None = None) -> Analysis:
             denied=(state == "denied"),
         ))
 
+    findings.extend(date_checks(contract, flows))
+
+    # A finding whose trigger text is still a blank is advice to fill the form,
+    # not evidence of a hostile term. "[city, state] will have exclusive
+    # jurisdiction" is an unfinished draft; "Wilmington, Delaware" is a decision
+    # made against you. Reporting them identically is how a report stops being
+    # trustworthy, so blanks are tagged and demoted one level.
+    blank = re.compile(r"\[[^\]]{1,70}\]|_{3,}|\b(?:tbd|to be (?:decided|determined|agreed))\b", re.I)
+    for f in findings:
+        if any(blank.search(e.quote) for e in f.evidence):
+            f.placeholder = True
+            f.severity = max(1, f.severity - 1)
+
     findings.sort(key=lambda f: (-f.severity, -len(f.evidence), f.category))
     raw = sum(f.weight for f in findings)
     # Saturating scale: one serious finding lands around 30, a genuinely hostile
@@ -339,4 +375,117 @@ def analyse(contract: Contract, extra_rules: list | None = None) -> Analysis:
         "total": len(findings),
     }
     return Analysis(contract=contract, findings=findings, score=score,
-                    band=_band(score), shape=deal_shape(contract), counts=counts)
+                    band=_band(score), shape=deal_shape(contract), counts=counts,
+                    doc_type=kind, blanks=blanks)
+
+
+_MON = {m: i for i, m in enumerate(
+    ["jan", "feb", "mar", "apr", "may", "jun",
+     "jul", "aug", "sep", "oct", "nov", "dec"], start=1)}
+
+_DATE = re.compile(
+    r"(?:(\d{1,2})\s*[-/]\s*(\d{1,2})\s*[-/]\s*(\d{2,4}))"          # 29/06/2023
+    r"|(?:(\d{1,2})(?:st|nd|rd|th)?[\s/-]+([a-z]{3,9})\.?[\s/-]+(\d{4}))"  # 3-Jul-2022
+    r"|(?:([a-z]{3,9})\.?[\s/-]+(\d{1,2})(?:st|nd|rd|th)?[,\s/-]+(\d{4}))",  # Jul 3 2022
+    re.I)
+
+# "Date:" is also the tail of "Start Date:" and "End Date:", so a letter date
+# must not be preceded by one of those labels.
+_LETTER_DATE = re.compile(
+    r"(?<!start )(?<!end )(?<!joining )(?<!birth )(?<!issued )\bdate\s*[:\-]\s*"
+    r"(\d{1,2}\s*[-/]\s*\d{1,2}\s*[-/]\s*\d{2,4}"
+    r"|\d{1,2}(?:st|nd|rd|th)?\s+[a-z]{3,9}\.?\s+\d{4}"
+    r"|[a-z]{3,9}\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})", re.I)
+
+
+def _parse_date(text: str) -> tuple[int, int, int] | None:
+    m = _DATE.search(text)
+    if not m:
+        return None
+    g = m.groups()
+    try:
+        if g[0]:
+            d, mo, y = int(g[0]), int(g[1]), int(g[2])
+        elif g[3]:
+            d, mo, y = int(g[3]), _MON[g[4][:3].lower()], int(g[5])
+        else:
+            d, mo, y = int(g[7]), _MON[g[6][:3].lower()], int(g[8])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if y < 100:
+        y += 2000
+    if not (1 <= mo <= 12 and 1 <= d <= 31):
+        return None
+    return y, mo, d
+
+
+def _label(contract: Contract, flows: dict, needle: str) -> Evidence | None:
+    for clause in contract.clauses:
+        at = flows[clause.cid].find(needle)
+        if at >= 0:
+            return Evidence(clause.cid, clause.label, clause.page,
+                            _quote(flows[clause.cid], at, at + len(needle)))
+    return None
+
+
+def date_checks(contract: Contract, flows: dict[str, str]) -> list[Finding]:
+    """Dates that cannot be true, which no keyword rule can catch.
+
+    Found by accident on a real internship letter dated 29/06/2023 whose
+    internship started 3-Jul-2022 and ended 28-Apr-2023 -- a term that had
+    already finished before the offer was written.
+    """
+    flow = re.sub(r"\s+", " ", normalise(contract.text))
+    out: list[Finding] = []
+
+    def grab(pattern: str | re.Pattern) -> tuple[str, tuple[int, int, int]] | None:
+        m = pattern.search(flow) if isinstance(pattern, re.Pattern) else re.search(pattern, flow, re.I)
+        if not m:
+            return None
+        d = _parse_date(m.group(0))
+        return (m.group(0), d) if d else None
+
+    # Both date shapes belong inside the label's group. Written as a top-level
+    # alternation, the bare form matches the letter's own date first, and every
+    # check then compares that date against itself.
+    _D = (r"(?:\d{1,2}\s*[-/]\s*(?:\d{1,2}|[a-z]{3,9})\s*[-/]\s*\d{2,4}"
+          r"|\d{1,2}(?:st|nd|rd|th)?\s+[a-z]{3,9}\.?\s+\d{4}"
+          r"|[a-z]{3,9}\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})")
+    letter = grab(_LETTER_DATE)
+    start = grab(r"(?:start date|commencing on|to begin on|begin on|date of joining"
+                 r"|joining on|scheduled to begin on)\s*[:\-]?\s*" + _D)
+    end = grab(r"(?:end date|ending on|will end on|conclude on|end(?:ing)? date"
+               r"|scheduled to end on)\s*[:\-]?\s*" + _D)
+
+    ld = _parse_date(letter[0]) if letter else None
+    sd = _parse_date(start[0]) if start else None
+    ed = _parse_date(end[0]) if end else None
+
+    if sd and ed and ed < sd:
+        out.append(Finding(
+            rid="dates-impossible-order",
+            title="The end date falls before the start date",
+            category="terms", severity=3,
+            why=("As written, the engagement finishes before it begins. That is not "
+                 "a typo to smile at: whichever date is wrong, one side's "
+                 "commitment is undefined, and disputes about tenure, notice and "
+                 "when pay starts are decided by whoever wrote the document."),
+            fix=("The engagement begins on [start date] and ends on [end date], "
+                 "both stated in the same format and after the date of this letter."),
+            ask=("The dates don't line up -- the end is before the start. Can you "
+                 "confirm the correct term?"),
+            evidence=[e for e in (_label(contract, flows, n[0]) for n in (start, end) if n) if e]))
+    if ld and sd and sd < ld:
+        out.append(Finding(
+            rid="dates-start-before-letter",
+            title="The start date is before the letter itself",
+            category="terms", severity=3,
+            why=("You are being offered a role that, on these dates, has already "
+                 "started or finished. Either the template was reused without "
+                 "updating or the term is not what it says -- and both mean the "
+                 "written dates cannot be relied on."),
+            fix="The commencement date is [date], which is on or after the date of this letter.",
+            ask="The joining date in here is earlier than the letter date -- can you "
+                 "reissue with the correct dates?",
+            evidence=[e for e in (_label(contract, flows, n[0]) for n in (letter, start) if n) if e]))
+    return [f for f in out if f.rid]

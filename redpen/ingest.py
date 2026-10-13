@@ -202,6 +202,27 @@ def _page_for(offset: int, bounds: list[int], total: int) -> int:
     return min(page, max(total, 1))
 
 
+def _is_clause_number(num: str) -> bool:
+    """Reject things that look like clause numbers but are not.
+
+    Real documents put a phone number, a PIN or a year at the start of a wrapped
+    line, and treating "9740532788." as a clause heading both invents a clause
+    and silently swallows the text before it.
+    """
+    if not num:
+        return False
+    if re.fullmatch(r"\d{4}", num):          # a year
+        return False
+    if re.fullmatch(r"\d{5,}", num):         # phone, PIN, postal code
+        return False
+    head, _, rest = num.partition(".")
+    if len(head) > 3:
+        return False
+    if rest and len(rest.replace(".", "")) > 3:
+        return False
+    return True
+
+
 def segment(text: str, total_pages: int = 1) -> list[Clause]:
     lines = _unwrap(text).split("\n")
     bounds = _page_map(text)
@@ -213,16 +234,21 @@ def segment(text: str, total_pages: int = 1) -> list[Clause]:
             continue
         m = _TOP_LEVEL.match(s)
         num = (m.group("num") if m else "") or ""
-        if not num:
-            continue
-        # Skip prose that merely starts with a number ("2024 was strong").
-        if re.fullmatch(r"\d{4}", num):
+        if not _is_clause_number(num):
             continue
         head = (m.group("head") or "").strip(" -–—.:") if m else ""
         heads.append((i, num, head))
 
     clauses: list[Clause] = []
     if len(heads) >= 3:
+        # Anything before the first numbered heading is still part of the
+        # agreement -- in offer letters it is where the pay and hours live.
+        first = heads[0][0]
+        lead = "\n".join(lines[:first]).strip()
+        if len(lead) >= 80:
+            clauses.append(Clause(
+                cid="c0", number="0", heading=_guess_heading(lead) or "Opening terms",
+                text=lead, page=_page_for(0, bounds, total_pages), start=0, end=len(lead)))
         for j, (start_line, num, head) in enumerate(heads):
             end_line = heads[j + 1][0] if j + 1 < len(heads) else len(lines)
             body = "\n".join(lines[start_line:end_line]).strip()
@@ -250,7 +276,10 @@ def _guess_heading(body: str) -> str:
     for line in body.split("\n"):
         s = line.strip()
         if 3 < len(s) < 90 and not s.endswith("."):
-            return re.sub(r"^[\d.]*\s*(section|article|clause)?\s*[\dIVXLCDM.]*\s*", "", s, flags=re.I).strip(" -–—.:")
+            return re.sub(
+                r"^(?:\d+(?:\.\d+)*|[IVXLCDM]{1,7})\s*(?:[).:]\s*|\s+|(?=[A-Z]))"
+                r"|(?:section|article|clause)\s+(?:\d+|[IVXLCDM]{1,7})\s*[:.)-]?\s*",
+                "", s, flags=re.I).strip(" -–—.:")
     return ""
 
 

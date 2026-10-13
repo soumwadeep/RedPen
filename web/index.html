@@ -182,6 +182,7 @@ footer b{color:var(--teal);font-weight:400}
     <div class="pill" id="p-engine"><i></i>ENGINE <b id="t-engine">scanning</b></div>
     <div class="pill" id="p-model"><i></i>MODEL <b id="t-model">—</b></div>
     <div class="pill on"><i></i>NET <b>LOOPBACK ONLY</b></div>
+    <div class="pill"><i></i>DOC <b id="t-type">—</b></div>
     <div class="pill"><i></i>RULES <b id="t-rules">—</b></div>
     <div class="pill"><i></i>DISK <b>0 FILES</b></div>
   </div>
@@ -212,6 +213,8 @@ footer b{color:var(--teal);font-weight:400}
         <span class="tag" data-s="northgate_msa">hostile agency MSA</span>
         <span class="tag" data-s="lumen_typical">typical design gig</span>
         <span class="tag" data-s="bright_harbour_fair">fair contractor deal</span>
+        <span class="tag" data-s="offer_letter_internship">internship offer letter</span>
+        <span class="tag" data-s="nda_one_way">one-way NDA</span>
       </div>
       <p class="hint">RedPen is an open rule library, <b>not a lawyer</b>. It shows you
       what to ask for; you decide what to sign.</p>
@@ -251,6 +254,13 @@ footer b{color:var(--teal);font-weight:400}
           </div>
         </div>
         <div class="shape" id="shape"></div>
+        <div id="blanks" class="hide" style="margin-top:10px;border:1px solid #4a3a12;
+             background:#1a1408;padding:9px 11px;border-radius:2px">
+          <div class="k" style="margin:0 0 5px;color:var(--amber)">
+            UNFILLED FIELDS · <span id="blanks-n">0</span> — this document is a draft, not a deal
+          </div>
+          <div id="blanks-list" style="font-size:12px;color:#d8c48a"></div>
+        </div>
         <div class="map" id="map"></div>
         <div class="mapkey">
           <span><i style="background:var(--red)"></i>STOP</span>
@@ -388,12 +398,33 @@ function render(){
   $('#g-copy').textContent = BANDCOPY[A.band];
   $('#c-stop').textContent = A.counts.stop; $('#c-fix').textContent = A.counts.fix;
   $('#c-ask').textContent = A.counts.ask; $('#c-cl').textContent = A.document.clauses;
-  renderShape(); renderMap(); renderList();
+  renderType(); renderShape(); renderBlanks(); renderMap(); renderList();
   if (A.findings.length && sel < 0) pick(0);
   else if (!A.findings.length) showClean();
   $('#t-findings').textContent = A.findings.length + ' total';
   finish('');
   (A.warnings||[]).concat(A.document.warnings||[]).forEach(w => $('#ovw').appendChild(el('p','hint','⚠ '+w)));
+}
+
+function renderType(){
+  const d = A.document;
+  $('#t-type').textContent = (d.type_label || d.type || '—').toUpperCase();
+  $('#p-type') && ($('#p-type').className = 'pill ' + (d.contractual ? 'on' : 'off'));
+  if (!d.contractual) {
+    $('#g-copy').textContent = 'This does not read as an agreement, so there is nothing to '
+      + 'review. RedPen scores promises; an instruction list makes none.';
+  }
+}
+
+function renderBlanks(){
+  const b = A.blanks || {total:0};
+  const box = $('#blanks');
+  if (!b.total) { box.classList.add('hide'); return; }
+  box.classList.remove('hide');
+  $('#blanks-n').textContent = b.total;
+  const named = (b.fields||[]).map(f => '<b style="color:#ffe9b8">[' + f + ']</b>');
+  const other = (b.samples||[]).map(s => '<b style="color:#ffe9b8">' + s + '</b>');
+  $('#blanks-list').innerHTML = named.concat(other).slice(0,10).join(' · ') || 'bracketed fields left empty';
 }
 
 function renderShape(){

@@ -178,9 +178,12 @@ def test_findings_cite_a_real_clause(hostile):
 
 def test_clause_numbering_is_detected():
     c = doc("northgate_msa.txt")
-    assert c.clause_count >= 10
-    assert [cl.number for cl in c.clauses][:3] == ["1", "2", "3"]
-    assert c.clauses[0].heading.lower().startswith("engagement")
+    assert c.clause_count >= 11
+    # c0 is the unnumbered preamble, which is part of the agreement and must
+    # not be silently dropped the way page 1 of a real offer letter was.
+    assert [cl.number for cl in c.clauses][:4] == ["0", "1", "2", "3"]
+    assert "master services agreement" in c.clauses[0].text.lower()
+    assert c.clauses[1].heading.lower().startswith("engagement")
 
 
 def test_paragraph_fallback_when_numbering_is_absent():
@@ -260,7 +263,7 @@ def test_user_rules_merge_without_touching_code(tmp_path):
     assert [r.rid for r in extra] == ["no-usage-rights-scope"]
     combined = all_rules(extra)
     assert any(r.rid == "no-usage-rights-scope" for r in combined)
-    assert len(combined) == len(RULES) + 1
+    assert len(combined) == len(all_rules([])) + 1
 
     text = (
         "1. LICENCE. Client is granted a perpetual licence to use the edit in any "
