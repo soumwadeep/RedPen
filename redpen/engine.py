@@ -214,15 +214,17 @@ def deal_shape(contract: Contract) -> dict:
 
     seen: set[str] = set()
     # Only report figures that sit in a fee context: "expenses over 50 USD" is
-    # not the deal value, and showing it erodes trust in the whole panel.
+    # not the deal value, and showing it erodes trust in the whole panel. The
+    # trailing window must stay greedy -- a lazy one matches empty, so the
+    # amount never lands inside it and FIGURES renders blank.
     for m in re.finditer(
-            r"([^.;]{0,70}?(?:fee|total|fixed|deposit|rate|price|invoice|charge)[^.;]{0,70}?)",
+            r"[^.;]{0,70}?(?:fee|total|fixed|deposit|rate|price|invoice|charge)[^.;]{0,70}",
             flow):
-        window = m.group(1)
+        window = m.group(0)
+        if re.search(r"expense|threshold|\bunder\b", window, re.I):
+            continue
         for mm in _MONEY.finditer(window):
             v = mm.group(0).strip()
-            if re.search(r"expense|over\s$|\bunder\b|threshold", window, re.I):
-                continue
             if v not in seen:
                 seen.add(v)
                 shape["amounts"].append(v)

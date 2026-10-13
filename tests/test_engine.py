@@ -44,6 +44,22 @@ def hostile():
     return analyse(doc("northgate_msa.txt"))
 
 
+def test_deal_shape_extracts_the_stated_numbers():
+    s = analyse(doc("lumen_typical.txt")).shape
+    assert s["net_days"] == 45
+    assert s["notice_days"] == 30
+    assert s["governing_law"] == "Ireland"
+    assert "2,400 eur" in s["amounts"], "the deal value must show up in FIGURES"
+
+
+def test_deal_shape_ignores_non_fee_figures():
+    """An expense threshold is not the price of the job."""
+    s = analyse(doc("bright_harbour_fair.txt")).shape
+    assert s["net_days"] == 14
+    assert s["deposit_pct"] == 40
+    assert all("50 usd" != a for a in s["amounts"]), s["amounts"]
+
+
 def test_hostile_contract_fires_every_planted_trap(hostile):
     fired = {f.rid for f in hostile.findings}
     missing = [rid for rid in HOSTILE_MUST_FIRE if rid not in fired]
