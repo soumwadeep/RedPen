@@ -8,7 +8,7 @@ Runs entirely on your laptop. Open-weight model, open rule library, no account,
 no API key, no upload. A client's NDA never touches a server you don't control,
 because it never leaves the machine.
 
-![RedPen review](assets/ui-review.png)
+![RedPen review](assets/shot-full-review.png)
 
 > RedPen is a pattern-matching tool, **not a lawyer**. It tells you what to ask
 > for. For anything you'd bet a month of income on, buy an hour of a real
