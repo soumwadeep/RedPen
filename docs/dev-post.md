@@ -155,11 +155,30 @@ RedPen is a pattern-matching tool with an open rule library, not a lawyer.
 
 ## My Agent Session
 
+A verifiable work log is committed at
+[docs/agent-session.md](https://github.com/soumwadeep/RedPen/blob/main/docs/agent-session.md)
+— every milestone mapped to a commit, and every mistake the agent made during the build
+listed with the test that caught it.
+
 Built agent-assisted, with the agent doing the typing and me owning the claims. Seven tracked milestones: verify the model runs on 8 GB before designing around it, build the rule library, wire the narration, build the app, add tests and samples, package it, write this post.
 
 The session log is honest about two things a summary wouldn't be. The first architecture sketch assumed a hosted web version, and the cost and privacy math above is what killed it. And most of the bugs listed under "Then I fed it my own paperwork" were *introduced by the agent* during this session and found by tests written in the same session — including a validation script that passed by observing nothing.
 
 <!-- Optional: publish this session to DevRelay and embed it with the agent_session tag. -->
+
+## My First User
+
+Shreshtha Das, a freelance developer who tests tools like this, ran RedPen on a real agreement. His feedback, verbatim:
+
+> As a freelance tester, I tested **RedPen** and found it to be a genuinely useful tool for freelancers who want to understand their contracts before signing them. I tried reviewing an agreement and was impressed by how clearly it highlighted potentially risky clauses, quoted the exact wording that needed attention, and suggested more freelancer-friendly alternatives. The negotiation email draft was another helpful feature, as it made it easier to communicate concerns professionally without spending hours figuring out what to say. I especially liked that RedPen works entirely offline, which is a major advantage when dealing with confidential client agreements and NDAs. Overall, RedPen makes contract review more accessible, saves valuable time, and gives freelancers more confidence when negotiating terms with clients. It's a practical tool that I can see myself recommending to other developers, designers, and independent professionals.
+
+Two things I would rather keep in view than round off. He reviewed one agreement, so this is a single data point and not validation — and the one thing I most wanted from him, **a false positive**, is the thing he didn't report. Precision is the claim this tool can least afford to get wrong, and it is the reason the fair-contract test exists in the suite.
+
+What he did confirm is the part that is enforced in code rather than promised in a README: that the offline behaviour holds, and that it matters most exactly where he says it would — client agreements and NDAs.
+
+**What I'd pay for it:** <!-- keep or delete this line --> he sent ₹89, which is more than ₹0 and less than the $19 I'm asking. The honest read is that a friend paid something to be supportive, not that a stranger paid a price. The next test is someone with no reason to be kind.
+
+**What he asked for next:** nothing yet — I asked him to run a real contract, not to write a roadmap. The two gaps I already know about are multi-document comparison (this NDA vs that MSA) and jurisdiction-aware wording, both of which the open rule library can take without touching the model.
 
 ## Prize Categories
 
