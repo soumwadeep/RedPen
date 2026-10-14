@@ -186,6 +186,20 @@ def test_clause_numbering_is_detected():
     assert c.clauses[1].heading.lower().startswith("engagement")
 
 
+def test_a_heading_beginning_with_a_roman_numeral_is_not_eaten():
+    """"INTERNSHIP OFFER LETTER" starts with I, which is a valid roman numeral,
+    and the clause-number stripper used to remove it."""
+    c = doc("offer_letter_internship.txt")
+    assert not c.clauses[0].heading.startswith("NTERNSHIP")
+    assert c.clauses[0].heading.startswith("INTERNSHIP")
+    assert c.clauses[0].label == "INTERNSHIP OFFER LETTER"
+
+
+def test_the_preamble_is_labelled_as_a_place_not_clause_zero():
+    c = doc("offer_letter_internship.txt")
+    assert not c.clauses[0].label.startswith("Clause 0")
+
+
 def test_paragraph_fallback_when_numbering_is_absent():
     text = ("We will build you a website for 800 dollars and you own it as soon as "
             "we start writing it, payment is due whenever we feel the work is "

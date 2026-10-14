@@ -36,7 +36,7 @@ W, H = 1500, 1150
 # the frame shows the top of the page again.
 SHOTS = [
     ("rules", f"{APP}/?sample=northgate_msa&nollm=1", 2500, 4.0,
-     "37 rules, ~20 ms. No model has run yet.", H, None),
+     "65 rules, ~20 ms. No model has run yet.", H, None),
     ("brief", f"{APP}/?sample=northgate_msa", 5000, 4.0,
      "Gemma 3 1B starts streaming, local, over loopback.", H, None),
     ("explain", f"{APP}/?sample=northgate_msa", 11000, 4.0,

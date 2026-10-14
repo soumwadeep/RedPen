@@ -57,6 +57,8 @@ class Clause:
 
     @property
     def label(self) -> str:
+        if self.number == "0":
+            return self.heading or "Opening terms"
         head = f" {self.heading}" if self.heading else ""
         return f"Clause {self.number}{head}"
 
@@ -276,8 +278,10 @@ def _guess_heading(body: str) -> str:
     for line in body.split("\n"):
         s = line.strip()
         if 3 < len(s) < 90 and not s.endswith("."):
+            # A separator is required: without it, the leading "I" of
+            # INTERNSHIP is a valid roman numeral and gets eaten.
             return re.sub(
-                r"^(?:\d+(?:\.\d+)*|[IVXLCDM]{1,7})\s*(?:[).:]\s*|\s+|(?=[A-Z]))"
+                r"^(?:\d+(?:\.\d+)*|[IVXLCDM]{1,7})(?:[).:]\s+|\s+)"
                 r"|(?:section|article|clause)\s+(?:\d+|[IVXLCDM]{1,7})\s*[:.)-]?\s*",
                 "", s, flags=re.I).strip(" -–—.:")
     return ""
