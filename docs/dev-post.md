@@ -18,6 +18,15 @@ The buyer is any independent who signs things. The pitch is one sentence: *your 
 
 ## Demo
 
+**Demo — the whole review, from drop to drafted email.** Captured headlessly at
+progressive points while Gemma streamed over loopback: the 36 findings land first
+(the rule pass is ~20 ms), then the brief, then the explanations, then the email.
+Reproducible with `python3 scripts/build_demo.py`.
+
+![RedPen demo](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.gif)
+
+Full-resolution MP4: [assets/demo.mp4](https://github.com/soumwadeep/RedPen/blob/main/assets/demo.mp4?raw=true) <!-- replace with a 60s screen recording if you make one -->
+
 A deliberately hostile agency MSA — 2 pages, 687 words:
 
 ![Verdict](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/shot-01-verdict.png)
@@ -43,19 +52,9 @@ git clone https://github.com/soumwadeep/RedPen.git && cd RedPen
 brew install llama.cpp && pip install -e .
 redpen                       # opens http://127.0.0.1:8790
 ```
-
-**Demo — the whole review, from drop to drafted email.** Captured headlessly at
-progressive points while Gemma streamed over loopback: the 36 findings land first
-(the rule pass is ~20 ms), then the brief, then the explanations, then the email.
-Reproducible with `python3 scripts/build_demo.py`.
-
-![RedPen demo](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.gif)
-
-Full-resolution MP4: [assets/demo.mp4](https://github.com/soumwadeep/RedPen/blob/main/assets/demo.mp4?raw=true) <!-- replace with a 60s screen recording if you make one -->
-
 ## Code
 
-**[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 5,121 lines of Python, 65 rules, 98 tests, no compiled bindings to break on install.
+**[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 5355 lines of Python, 65 rules, 104 tests, no compiled bindings to break on install.
 
 ## How I Built It
 
