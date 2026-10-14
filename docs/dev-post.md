@@ -44,7 +44,14 @@ brew install llama.cpp && pip install -e .
 redpen                       # opens http://127.0.0.1:8790
 ```
 
-**Video demo:** <!-- TODO: paste your 60s Loom/YouTube link -->
+**Demo — the whole review, from drop to drafted email.** Captured headlessly at
+progressive points while Gemma streamed over loopback: the 36 findings land first
+(the rule pass is ~20 ms), then the brief, then the explanations, then the email.
+Reproducible with `python3 scripts/build_demo.py`.
+
+![RedPen demo](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.gif)
+
+Full-resolution MP4: [assets/demo.mp4](https://github.com/soumwadeep/RedPen/blob/main/assets/demo.mp4?raw=true) <!-- replace with a 60s screen recording if you make one -->
 
 ## Code
 
