@@ -170,11 +170,17 @@ Shreshtha Das, a freelance developer who tests tools like this, ran RedPen on a 
 
 > As a freelance tester, I tested **RedPen** and found it to be a genuinely useful tool for freelancers who want to understand their contracts before signing them. I tried reviewing an agreement and was impressed by how clearly it highlighted potentially risky clauses, quoted the exact wording that needed attention, and suggested more freelancer-friendly alternatives. The negotiation email draft was another helpful feature, as it made it easier to communicate concerns professionally without spending hours figuring out what to say. I especially liked that RedPen works entirely offline, which is a major advantage when dealing with confidential client agreements and NDAs. Overall, RedPen makes contract review more accessible, saves valuable time, and gives freelancers more confidence when negotiating terms with clients. It's a practical tool that I can see myself recommending to other developers, designers, and independent professionals.
 
-Two things I'd rather keep in view than round off. He reviewed one agreement, so this is a single data point, not validation — and the one thing I most wanted from him, **a false positive**, is the thing he didn't report. Precision is the claim this tool can least afford to get wrong, and it's the reason the fair-contract test exists.
+I'd rather keep two things in view than round them off. He reviewed one agreement, so this is a single data point, not validation — and the one thing I most wanted from him, **a false positive**, is the thing he didn't report. Precision is the claim this tool can least afford to get wrong, and it's the reason the fair-contract test exists.
 
 What he did confirm is the part enforced in code rather than promised in a README: that the offline behaviour holds, and that it matters most exactly where he says it would — client agreements and NDAs.
 
-**Would he pay?** He sent ₹89, which is more than ₹0 and less than the $19 I'm asking. The honest read is that a friend paid something to be supportive, not that a stranger paid a price. The next test is someone with no reason to be kind.
+**Did he pay?** Yes — ₹89, which is more than ₹0 and less than the $19 I'm asking. The honest read is that a friend paid something to be supportive, not that a stranger paid a price. The next test is someone with no reason to be kind.
+
+**A second voice — from someone who read the project, not someone who used it.** The founder of [Actizant](https://actizant.com/), which builds what they call intelligent operating systems for rural India, wrote this after reviewing the repo:
+
+> "Privacy should be a fundamental design principle, not an afterthought, especially when dealing with confidential client agreements, statements of work, and NDAs."
+
+They also handed me a roadmap in three lines, which is more useful than praise: **customisable risk rules per profession**, **jurisdiction-aware guidance**, and **transparent statements of what automated analysis cannot do**. The first two are exactly what an open rule library is built for — a profession-specific rule set is a JSON file, and a jurisdiction profile is a second rule set with different safe-harbours. The third is why the UI says "no rule matched is not a guarantee of fairness" instead of showing a green tick.
 
 ## Prize Categories
 
