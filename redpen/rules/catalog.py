@@ -37,17 +37,29 @@ from dataclasses import dataclass, field
 # against the primary phrase (any_of), never against context groups -- in
 # "shall not work for any competitor" the competitor phrase is not itself
 # negated, the obligation around it is.
-NEGATIVE = re.compile(r"\b(?:no|not|without|never|neither|nor|nil)\b", re.I)
+NEGATIVE = re.compile(r"\b(?:no|not|nothing|without|never|neither|nor|nil)\b", re.I)
 
 
-def negated_at(text: str, at: int, window: int = 52) -> bool:
-    """Look back through the current sentence for a negator."""
+# A negator only counts if it governs the phrase it precedes. Sentences are not
+# the unit of government: "Nothing in this Agreement shall limit the
+# Contractor's liability, which is unlimited" contains a negator that belongs to
+# "limit", and must not silence the "unlimited" trigger. So the look-back stops
+# at the nearest clause boundary -- punctuation or a conjunction that starts a
+# fresh promise.
+_CLAUSE_BREAK = re.compile(r"[.;,)]|\b(?:and|but|which|provided|although|whereas)\b")
+
+
+def negated_at(text: str, at: int) -> bool:
+    """True when a negator governs the matched phrase.
+
+    Scans back only as far as the nearest clause boundary. A whole-sentence
+    window (which is what this had before) suppresses "Nothing shall limit
+    liability, which is unlimited" and lets an early "no deposit" silence an
+    unrelated set-off clause two promises later.
+    """
     seg = text[:at]
-    for sep in (".", ";"):
-        i = seg.rfind(sep)
-        if i > 0:
-            seg = seg[i + 1:]
-    return bool(NEGATIVE.search(seg[-window:]))
+    last = max((m.end() for m in _CLAUSE_BREAK.finditer(seg)), default=0)
+    return bool(NEGATIVE.search(seg[last:]))
 
 
 # Real agreements call the freelancer "Contractor", "Designer", "Supplier",
@@ -59,7 +71,9 @@ TERMS = {
     "contractor": (r"(?:contractors?|designers?|developers?|engineers?|writers?|"
                    r"consultants?|freelancers?|workers?|employees?|suppliers?|"
                    r"vendors?|subcontractors?|service providers?|"
-                   r"independent contractors?|party b)"),
+                   r"independent contractors?|translation(?:s)?|translators?|"
+                   r"studios?|agencies|bureaus?|practitioners?|interns?|"
+                   r"the (?:studio|agency|developer|translator|consultant)|party b)"),
     "client": (r"(?:clients?|companies|customers?|purchasers?|buyers?|"
                r"commissioners?|end clients?|company|party a)"),
 }
@@ -238,7 +252,10 @@ RULES: list[Rule] = [
         category="ip", severity=2,
         any_of=[r"moral rights", r"rights of (?:attribution|integrity)", r"derecognition"],
         all_of=[[r"waive", r"forbear", r"not (?:to )?(?:assert|enforce)", r"extinguish"]],
-        none_of=[r"only to the extent necessary", r"except to the extent",
+        none_of=[r"(?:do|shall|will|does) not (?:be required to )?waive",
+                 r"no waiver of moral rights", r"shall not be required to waive",
+                 r"retains? (?:all )?moral rights",
+                 r"only to the extent necessary", r"except to the extent",
                  r"retains? (?:the )?(?:right to be credited|right of attribution)",
                  r"waives? .{0,40}only in (?:the )?(?:form|manner)"],
         why=("In many countries you cannot transfer authorship, only promise "
@@ -375,6 +392,8 @@ RULES: list[Rule] = [
         any_of=[r"(?:all|any) taxes.{0,80}(?:contractor|you)(?:'s)? (?:responsibility|borne|sole)",
                 r"including any (?:withholding|sales|gst|vat|service) tax",
                 r"gross[- ]up"],
+        none_of=[r"\bno\b[^.]{0,25}tax[^.]{0,30}(?:responsib|borne|liab)",
+                 r"exclusive of all taxes", r"fees are exclusive"],
         why=("A fee quoted as inclusive of VAT/GST is a fee cut by the tax. "
              "Cross-border withholding can also mean the client keeps 10-30% "
              "of the invoice and you cannot always reclaim it."),
@@ -461,6 +480,9 @@ RULES: list[Rule] = [
                 r"non-?compet"],
         all_of=[[r"competitor", r"other client", r"any (?:other|third[- ]party) (?:person|entity|client)",
                 r"same (?:industry|sector|market)", r"exclusiv"]],
+        none_of=[r"for the duration of the (?:engagement|project|term) only",
+                 r"identified (?:to contractor )?in writing as a direct competitor",
+                 r"named (?:direct )?competitors?", r"is not exclusive"],
         why=("An exclusivity clause turns a project fee into a salary with no "
              "employment rights, no benefits and no job security. In several "
              "countries an unpaid non-compete of this kind is also unenforceable "
@@ -666,7 +688,8 @@ RULES: list[Rule] = [
         rid="perpetual-secrecy",
         title="Confidentiality never ends",
         category="terms", severity=1,
-        any_of=[r"(?:confidentiality|obligations).{0,60}(?:perpetual|in perpetuity|indefinitely|survives? indefinitely)",
+        any_of=[r"\bin perpetuity\b", r"obligations? are perpetual",
+                r"confidentiality .{0,40}\bperpetual\b",
                 r"survive(?:s|d)? .{0,30}(?:termination|expiry) .{0,30}(?:indefinitely|perpetually|without limit)"],
         none_of=[r"\d+ years? (?:after|following)"],
         why=("Perpetual secrecy over-burdens a normal engagement, and after a "
@@ -698,7 +721,10 @@ RULES: list[Rule] = [
         rid="no-liability-cap-anywhere",
         title="There is no liability cap at all",
         category="risk", severity=2, doc_scope=True,
-        any_of=[r"shall not exceed|liability.{0,60}capped|aggregate liability|not (?:be )?liable for .{0,30}exceed"],
+        any_of=[r"shall not exceed|liability.{0,60}capped|aggregate liability|not (?:be )?liable for .{0,30}exceed",
+                r"liability[^.]{0,50}?(?:is|shall be|will be) limited to",
+                r"liability .{0,30}(?:shall not|may not) (?:exceed|go above)",
+                r"limited to the fees (?:paid|payable)"],
         why=("Nothing in the agreement limits what either side can be sued for. "
              "Caps are usually mutual and cost the client nothing to give; "
              "their absence is what makes small projects feel like large risks."),
@@ -709,7 +735,8 @@ RULES: list[Rule] = [
         rid="no-deposit-required",
         title="No deposit or upfront payment",
         category="money", severity=1, doc_scope=True,
-        any_of=[r"deposit|upfront|in advance|on commencement|50% (?:of|upon)|mobilis"],
+        any_of=[r"deposit|upfront|in advance|on commencement|on signature|on order confirmation",
+                r"\d{1,3}\s*% (?:is )?(?:due|payable)(?: on| of)|mobilis"],
         why=("Without a deposit you are financing the first weeks of the job "
              "and have no signal that the buyer is serious. A 30-50% deposit "
              "is standard and reduces ghosting to near zero."),
@@ -733,7 +760,10 @@ RULES: list[Rule] = [
         rid="no-acceptance-criteria",
         title="No written acceptance criteria",
         category="money", severity=2, doc_scope=True,
-        any_of=[r"acceptance criteria|specification in schedule|deliverables in schedule|statement of work in schedule|scope .{0,40}(?:schedule|annex|appendix)"],
+        any_of=[r"acceptance criteria|specification in schedule|deliverables in schedule|statement of work in schedule",
+                r"scope .{0,40}(?:schedule|annex|appendix)|services are those listed in",
+                r"deemed accepted|listed in schedule|criteria in (?:annexure|schedule)",
+                r"material non-?conformit"],
         why=("Without a written definition of done, acceptance becomes a "
              "preference -- and preference is the argument you lose at the end "
              "of a project, after the money has already gone out."),
@@ -744,7 +774,10 @@ RULES: list[Rule] = [
         rid="no-preexisting-tools-carve-out",
         title="No carve-out for your existing tools",
         category="ip", severity=2, doc_scope=True,
-        any_of=[r"pre-?existing|background ip|prior (?:works?|materials?)|contractor'?s (?:tools|templates|libraries)"],
+        any_of=[r"pre-?existing|background ip|prior (?:works?|materials?)|contractor'?s (?:tools|templates|libraries)",
+                r"remain(?:s|ed)? (?:the )?(?:contractor'?s|their own|own)\b",
+                r"retain(?:s|ed)? .{0,40}(?:tool|template|librar|framework|component|memory|glossar|database|kit)",
+                r"(?:tooling|starter kits|components|frameworks|glossaries|translation memory|reporting templates|databases) .{0,40}(?:remain|retain|not be deliverable)"],
         why=("Blanket assignment of 'all work product' can be read to sweep in "
              "the component library, boilerplate or method you brought with you "
              "and use on every job -- the base of the business, transferred "

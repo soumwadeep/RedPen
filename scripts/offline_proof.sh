@@ -7,8 +7,28 @@
 #
 #   ./scripts/offline_proof.sh [path-to-contract]
 #
-# For the stronger version, turn Wi-Fi off and run:  redpen review contract.pdf
-# Nothing in the pipeline needs the network after the weights are on disk.
+# LIMITATION, stated rather than hidden: sampling is observational. A connection
+# that opens and closes entirely between two samples is invisible to this script,
+# so a PASS here means "nothing was seen", not "nothing happened".
+#
+# The enforced version is tests/test_offline_enforcement.py, which intercepts
+# socket.connect for the duration of a full review and raises on any non-loopback
+# target. That fails closed by construction and needs no privileges:
+#
+#     python3 -m pytest tests/test_offline_enforcement.py -q
+#
+# For OS-level proof, block egress and confirm the review still completes:
+#
+#     echo "block out proto tcp from any to any keep state" > /tmp/redpen-pf
+#     echo "anchor "com/myapp/*" { rules /tmp/redpen-pf }" > /tmp/redpen-anchor
+#     sudo pfctl -a com/myapp -f /tmp/redpen-anchor && sudo pfctl -e
+#     redpen review contract.pdf --no-llm          # must still work
+#     sudo pfctl -a com/myapp -F all && sudo pfctl -d
+#
+# The deterministic review has no network dependency at all, so it completes
+# behind a full block; only the model layer needs a loopback port, which stays
+# reachable. Turn Wi-Fi off and run `redpen review contract.pdf` for the same
+# result without touching the firewall.
 
 set -uo pipefail
 cd "$(dirname "$0")/.."

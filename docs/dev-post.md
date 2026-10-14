@@ -54,7 +54,7 @@ redpen                       # opens http://127.0.0.1:8790
 ```
 ## Code
 
-**[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 5355 lines of Python, 65 rules, 104 tests, no compiled bindings to break on install.
+**[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 5,400 lines of Python, 65 rules, 191 tests, no compiled bindings to break on install.
 
 ## How I Built It
 
@@ -140,10 +140,10 @@ With a closed model you cannot see the standard being applied, and you cannot ch
 | Hostile agency MSA (synthetic) | services | 36 | 99 |
 | Typical design gig (synthetic) | services | 12 | 83 |
 | **Fair contractor deal (synthetic)** | services | **0** | **0** |
-| Internship offer letter (synthetic) | employment | 19 | 97 |
+| Internship offer letter (synthetic) | employment | 20 | 97 |
 | One-way NDA (synthetic) | nda | 11 | 77 |
 | Real offer letter (Skolar) | employment | 12 | 90 |
-| Real internship letter (Pentonix) | employment | 7 | 73 |
+| Real internship letter (Pentonix) | employment | 8 | 77 |
 | Real offer letter (Eubrics) | employment | 12 | 85 |
 | Real NDA (Eubrics) | nda | 11 | 77 |
 | Real onboarding checklist | *not an agreement* | 0 | refused |
@@ -152,6 +152,57 @@ With a closed model you cannot see the standard being applied, and you cannot ch
 Five synthetic fixtures, six real documents. The fair contract scoring zero and the
 checklist being refused are the two rows I would defend hardest: an instruction list
 makes no promises, and scoring it would have manufactured findings out of prose.
+
+### What two comments on this post changed
+
+I published before this was as tested as it should have been, and two comments
+in the first day were more useful than anything I had written myself.
+
+**@ArhanCanli** pointed out that my six real documents had quietly become my
+training set — every fix was written to make a document I had already opened come
+out right — and suggested minimal pairs: the same clause asserted and refused, to
+see which rules actually survive negation. That test is now
+`tests/test_negation_pairs.py`, 30 pairs, and **it found five over-flag bugs the
+first time it ran.** The best one: the negation look-back window was 52
+characters, so in "Nothing in this Agreement shall make the Contractor's
+liability unlimited" it scanned "othing", found no negator, and flagged a clause
+that refuses the very thing it is being accused of. Fixing it properly meant
+abandoning character windows altogether and cutting at clause boundaries —
+punctuation and conjunctions — because "Nothing shall *limit* liability, which is
+unlimited" contains a negator that governs the wrong verb.
+
+They also noted that `lsof` sampling can miss a connection that opens and closes
+between samples, which is true, and that my fair-contract result was one data
+point. Both are now addressed: `tests/test_offline_enforcement.py` intercepts
+`socket.connect` for the duration of a whole review and raises on any non-loopback
+target, so the property is enforced rather than observed, and
+`tests/test_precision_variants.py` holds eight fair drafts across five
+jurisdictions, each paired with a near-miss where one hostile clause is appended.
+
+That second file immediately found four more gaps, all in the *absence* detectors:
+a liability cap written as "is limited to the fees paid" was not recognised as a
+cap, a deposit "payable on signature" was not recognised as a deposit, a
+translation memory retained by the translator was not recognised as a tooling
+carve-out, and a normal five-day week was being flagged as employee-style
+control. Writing more good contracts turned out to be a better test than writing
+more bad ones.
+
+**@IliaIvanov** described the same failure in their own cold-email checker — a
+small model inventing an opt-out that was not there — which is exactly why every
+quote in RedPen must appear verbatim in the source document, asserted by a test
+that walks every finding and checks the string exists in the text. Their question,
+"do you run the rules against fair contracts to count false alarms, or mostly
+against hostile ones?", had an uncomfortable answer when I wrote it down: mostly
+hostile, and one fair file. It now has eight, plus a control case proving a clean
+result is not just the rules being asleep.
+
+One thing I did not do: quietly delete the cases the new tests could not pass.
+Four limitations are now encoded as tests that **fail if someone fixes them
+without updating the list** — statutory carve-outs read as unlimited liability,
+legally mandated insurance, a negator two promises earlier in the same
+comma-joined sentence, and the "nothing shall limit liability, which is
+unlimited" construction above. A limitation you can see is worth more than one I
+have quietly tuned away.
 
 **Limits, honestly.** 8 GB RAM is the floor — 1–3B at Q4 fit, 7B doesn't. Scanned PDFs aren't supported: no selectable text, and RedPen won't send your pages to an OCR service, so it says so rather than returning an empty review. The model layer is a 1B model and its explanations are sometimes generic, which is why the library's own wording sits underneath it. A clean report is weak evidence — no rule matched is not a guarantee of fairness, and the UI says that out loud instead of letting a green gauge imply safety. And the library is written from a freelancer's and an intern's point of view: it flags commercial risk patterns, not legal validity, across jurisdictions it does not claim to know.
 

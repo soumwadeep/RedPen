@@ -207,7 +207,7 @@ one-time price survivable for an indie tool.
 ## Tests
 
 ```bash
-python3 -m pytest -q            # 98 tests, no model needed
+python3 -m pytest -q            # 191 tests, no model needed
 python3 -m pytest -q -m slow    # adds a real local-model pass
 ```
 

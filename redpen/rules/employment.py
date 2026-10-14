@@ -44,6 +44,10 @@ EMPLOYMENT_RULES: list[Rule] = [
                 r"(?:submit|provide|deposit)[^.]{0,50}original (?:marksheets?|certificates?|documents?)",
                 r"replacement document .{0,60}(?:approved|hr)",
                 r"originals will be returned .{0,60}(?:completion|end of)"],
+        none_of=[r"will not be (?:retained|held|kept|collected)",
+                 r"(?:are|shall) not (?:be )?(?:retained|held|collected)",
+                 r"never (?:be )?(?:retained|held|collected)",
+                 r"no original (?:documents|certificates|marksheets)"],
         why=("Holding your original marksheet or degree is the single most "
              "effective way to make sure you cannot leave. It is not security for "
              "the employer -- it is leverage over you, and asking for a "
@@ -184,8 +188,12 @@ EMPLOYMENT_RULES: list[Rule] = [
         rid="fixed-hours-control",
         title="Set hours and a set week",
         category="control", severity=1, applies_to="employment",
-        any_of=[r"\d days a week", r"from \d{1,2}[.:]\d{2}\s*(?:a\.?m\.?|p\.?m\.?) .{0,20}(?:to|[-–])\s*\d{1,2}[.:]\d{2}",
-                r"available for \d+ hours on a daily basis", r"work schedule .{0,40}\d days"],
+        # A 5-day week is normal; six days, or a fixed clock-in/clock-out, is the
+        # control that turns an internship into an unposted full-time job.
+        any_of=[r"[6-7] days a week", r"6 days per week",
+                r"from \d{1,2}[.:]\d{2}\s*(?:a\.?m\.?|p\.?m\.?) .{0,20}(?:to|[-–])\s*\d{1,2}[.:]\d{2}",
+                r"available for \d+ hours on a daily basis",
+                r"work schedule .{0,40}[6-7] days"],
         why=("Six days a week with fixed 11-to-8 hours is the schedule of a "
              "full-time job. It is not a complaint about effort, it is a "
              "calculation: divide the monthly stipend by the hours actually "
