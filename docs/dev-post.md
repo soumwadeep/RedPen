@@ -26,7 +26,7 @@ Reproducible with `python3 scripts/build_demo.py`.
 
 ![RedPen demo](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.gif)
 
-Full-resolution MP4: [assets/demo.mp4](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.mp4) 
+Full-resolution MP4: [assets/demo.mp4](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.mp4)
 
 A deliberately hostile agency MSA — 2 pages, 687 words:
 
@@ -62,6 +62,7 @@ git clone https://github.com/soumwadeep/RedPen.git && cd RedPen
 brew install llama.cpp && pip install -e .
 redpen                       # opens http://127.0.0.1:8790
 ```
+
 ## Code
 
 **[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 4,092 lines of app code and 2,200 lines of tests, 65 rules, 191 tests, no compiled bindings to break on install.
