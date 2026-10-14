@@ -235,11 +235,19 @@ def sanitize_signature(body: str) -> str:
     small failure that would cost this product its credibility.
     """
     m = _SIG.search(body.rstrip())
-    if not m:
-        return body
-    if m.group(2).strip().lower() in {"yours", "yourself", "your name"}:
-        return body
-    return body[: m.start()] + f"{m.group(1).capitalize()},\n\n[your name]"
+    if m:
+        if m.group(2).strip().lower() in {"yours", "yourself", "your name"}:
+            return body
+        return body[: m.start()] + f"{m.group(1).capitalize()},\n\n[your name]"
+
+    # Fallback for the variant that actually shipped a "Max" into a demo: no
+    # salutation at all, just a dash and a name on the last line. A lone short
+    # final line after a blank is a signature, and a name there is invented.
+    bare = re.search(r"\n+[ \t]*(?:[-\u2013\u2014_*]{1,4})[ \t]*"
+                     r"([A-Z][a-zA-Z]{1,14})[ \t]*$", body.rstrip())
+    if bare:
+        return body[: bare.start()] + "\n\n[your name]"
+    return body
 
 
 def negotiation_email(llm: LocalLLM | None, a: Analysis, tone: str = "warm") -> dict:

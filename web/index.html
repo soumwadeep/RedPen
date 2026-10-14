@@ -172,6 +172,14 @@ footer b{color:var(--teal);font-weight:400}
   border-radius:50%;animation:spin .8s linear infinite;margin-right:5px;vertical-align:-1px}
 .hide{display:none}
 ::selection{background:#1d5247;color:#fff}
+/* ?shot=email|blanks arranges the real panels for a still image or a recording;
+   it changes layout only, never content. */
+body.shot-email main{grid-template-columns:1fr}
+body.shot-email #verdict,body.shot-email .split,body.shot-email #intake{display:none}
+body.shot-email #model-layer pre{max-height:72vh;font-size:14px}
+body.shot-blanks main{grid-template-columns:1fr}
+body.shot-blanks #intake,body.shot-blanks .split,body.shot-blanks #model-layer{display:none}
+body.shot-blanks .verdict{grid-template-columns:150px 1fr}
 </style>
 </head>
 <body>
@@ -190,7 +198,7 @@ footer b{color:var(--teal);font-weight:400}
 
 <main>
   <!-- ---------- left rail ---------- -->
-  <section class="card">
+  <section class="card" id="intake">
     <h2>INTAKE <em id="t-time">idle</em></h2>
     <div class="pad">
       <div id="drop" tabindex="0">
@@ -530,6 +538,10 @@ function stream(){
   modelRun.addEventListener('done', ev => {
     const d = JSON.parse(ev.data); progress(1,'done'); $('#t-model-state').textContent = 'complete in ' + d.seconds + 's';
     modelRun.close(); refreshStatus();
+    // ?focus=email scrolls the model layer into view, so a headless capture (or
+    // a user who wants the email first) can land on it without manual scrolling.
+    if (new URLSearchParams(location.search).get('focus') === 'email')
+      $('#model-layer').scrollIntoView({behavior:'instant', block:'start'});
   });
   modelRun.addEventListener('error', () => { progress(1,'model stream closed'); modelRun.close(); });
 }
@@ -563,6 +575,7 @@ new MutationObserver(setHref).observe($('#t-doc'),{childList:true,subtree:true,c
 /* Deep links: /?sample=lumen_typical runs a review on load, so a demo can be
    handed to someone as one URL, and screenshots can be taken headlessly. */
 const Q = new URLSearchParams(location.search);
+if (Q.get('shot')) document.body.classList.add('shot-' + Q.get('shot'));
 if (Q.get('sample')) {
   const s = Q.get('sample'), det = Q.get('nollm') === '1';
   setTimeout(() => run({sample: s}, det, s), 250);

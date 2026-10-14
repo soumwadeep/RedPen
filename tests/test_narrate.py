@@ -30,6 +30,9 @@ SAMPLES = Path(__file__).resolve().parent.parent / "samples"
     "best regards,\n\n*Max*",
     "Thanks\n\n— Max",
     "Kind regards,\n\nMax\n",
+    "Body of the email.\n\n-- Max",
+    "Body of the email.\n\n--- Max",
+    "Body of the email.\n\n\u2014 Max",
 ])
 def test_invented_signoff_names_are_replaced(tail):
     body = "Hi there,\n\nCould we move the IP transfer?\n\n" + tail
@@ -47,6 +50,12 @@ def test_a_real_placeholder_is_left_alone():
 def test_email_body_without_a_signoff_is_untouched():
     body = "Hi,\n\nTwo changes please:\n1. IP on payment\n2. Net 15"
     assert narrate.sanitize_signature(body) == body
+
+
+def test_a_name_inside_the_body_is_not_mistaken_for_a_signature():
+    body = ("Hi,\n\nAs Max mentioned in the review call, clause 4 needs "
+            "rewording. Thanks!")
+    assert "Max" in narrate.sanitize_signature(body)
 
 
 # --------------------------------------------------------------------------- #
