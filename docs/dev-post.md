@@ -54,7 +54,7 @@ redpen                       # opens http://127.0.0.1:8790
 ```
 ## Code
 
-**[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 5,400 lines of Python, 65 rules, 191 tests, no compiled bindings to break on install.
+**[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 4092 lines of app code and 2,200 lines of tests, 65 rules, 191 tests, no compiled bindings to break on install.
 
 ## How I Built It
 
