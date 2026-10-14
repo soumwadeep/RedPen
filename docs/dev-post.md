@@ -2,6 +2,7 @@
 title: "A 1B model isn't smart enough to read a contract. So I never asked it to."
 published: false
 tags: devchallenge, hf26challenge, ai, opensource, privacy
+cover_image: https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/cover.png
 ---
 
 *This is a submission for the [Hacktoberfest Open-Source AI Challenge Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12)*
@@ -25,7 +26,7 @@ Reproducible with `python3 scripts/build_demo.py`.
 
 ![RedPen demo](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.gif)
 
-Full-resolution MP4: [assets/demo.mp4](https://github.com/soumwadeep/RedPen/blob/main/assets/demo.mp4?raw=true) <!-- replace with a 60s screen recording if you make one -->
+Full-resolution MP4: [assets/demo.mp4](https://github.com/soumwadeep/RedPen/blob/main/assets/demo.mp4?raw=true) 
 
 A deliberately hostile agency MSA — 2 pages, 687 words:
 
@@ -54,7 +55,7 @@ redpen                       # opens http://127.0.0.1:8790
 ```
 ## Code
 
-**[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 4092 lines of app code and 2,200 lines of tests, 65 rules, 191 tests, no compiled bindings to break on install.
+**[github.com/soumwadeep/RedPen](https://github.com/soumwadeep/RedPen)** — MIT, 4,092 lines of app code and 2,200 lines of tests, 65 rules, 191 tests, no compiled bindings to break on install.
 
 ## How I Built It
 
@@ -177,7 +178,7 @@ point. Both are now addressed: `tests/test_offline_enforcement.py` intercepts
 `socket.connect` for the duration of a whole review and raises on any non-loopback
 target, so the property is enforced rather than observed, and
 `tests/test_precision_variants.py` holds eight fair drafts across five
-jurisdictions, each paired with a near-miss where one hostile clause is appended.
+jurisdictions, seven of them paired with a near-miss where one hostile clause is appended.
 
 That second file immediately found four more gaps, all in the *absence* detectors:
 a liability cap written as "is limited to the fees paid" was not recognised as a
