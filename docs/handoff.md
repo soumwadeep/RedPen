@@ -75,27 +75,30 @@ positive you fixed is stronger than a claim of perfect precision.
 
 ---
 
-## 2. Record this
+## 2. Record this (optional — a GIF demo is already in the post)
 
-60 seconds, four shots. `Cmd+Shift+5` → record a portion, select the browser
-window. Keep the terminal visible in shot one — the fact that it's local is the
-story.
+`python3 scripts/build_demo.py` regenerates `assets/demo.gif` and `assets/demo.mp4`
+from live captures of the running app. Those are already embedded in the post, so
+this step is **optional**. A real screen recording still beats it, because it shows
+the 10-second stream happening in one unbroken take rather than as a time-lapse.
 
-| # | Time | Action | What it proves |
-|---|------|--------|----------------|
-| 1 | 0–12s | Terminal: type `redpen` and hit return. Watch it start and the browser open. | No login, no cloud, one command. |
-| 2 | 12–25s | Drag `samples/northgate_msa.pdf` onto the drop zone. | Findings appear in ~20 ms, long before the model has written a word. |
-| 3 | 25–45s | Let the MODEL LAYER fill in. Click finding 1, scroll to the email. | Gemma writing a real negotiation email, live, in ~11s. |
-| 4 | 45–60s | Load `bright_harbour_fair` sample → score 0, "Nothing in the library matched". | It doesn't cry wolf. This is the shot that separates it from a toy. |
+**Setup, once:** `Cmd+Shift+5` → Record Selected Portion → drag the box over the
+browser window. Have Terminal and Chrome side by side, terminal on the left.
+Keep the clip under 70 seconds. Don't narrate while typing.
 
-Then upload to a place that gives you a URL: Loom, YouTube (unlisted), or
-Gfycat for a loop. Put the link in the post's **Demo** section.
+| # | Time | Do this | Say this |
+|---|------|---------|----------|
+| 1 | 0:00–0:10 | Terminal, visible: type `redpen` and hit return. Let the browser open. | "This is RedPen. One command, and it starts a local Gemma 3 1B model and opens the app on localhost. No account, no API key." |
+| 2 | 0:10–0:22 | Drag `samples/northgate_msa.pdf` onto the drop zone. **Wait — the findings appear instantly.** Point at the gauge. | "Notice that appeared immediately. That's 65 open rules, about twenty milliseconds, no model involved. Every finding cites the clause, the page, and the exact words." |
+| 3 | 0:22–0:38 | Leave it alone. Let the brief, then the explanations, then the email land on screen. | "Now the model is streaming — still on this machine. Brief first, then per-finding explanations, then the negotiation email." |
+| 4 | 0:38–0:52 | Click the email, hit **COPY EMAIL**. Then click finding 1 and show the quoted clause. | "That email is genuinely sendable. And if you don't trust a finding, here's the source — click through and it's right there in the document." |
+| 5 | 0:52–1:05 | Click the **fair contractor deal** chip. Score 0. | "And this is the part that matters: a fair contract comes back empty. A tool that flags everything is a tool you learn to ignore." |
 
-Two things worth narrating if you add voice: *"this is a 1B model, it isn't
-deciding what's dangerous — 37 open rules are"* and *"nothing has left this
-machine, here's the socket log"*.
+**If you only record one shot:** do #2 and #3 in a single take — the instant rules,
+then the model streaming behind them. That contrast *is* the product.
 
----
+**Where to host it:** Loom or unlisted YouTube, then paste the link into the post's
+Demo section. Don't upload the MP4 to a drive link — judges click and expect it to play.
 
 ## 3. First-user log
 
