@@ -26,7 +26,7 @@ Reproducible with `python3 scripts/build_demo.py`.
 
 ![RedPen demo](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.gif)
 
-Full-resolution MP4: [assets/demo.mp4](https://github.com/soumwadeep/RedPen/blob/main/assets/demo.mp4?raw=true) 
+Full-resolution MP4: [assets/demo.mp4](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/demo.mp4) 
 
 A deliberately hostile agency MSA — 2 pages, 687 words:
 
@@ -47,6 +47,15 @@ And the result that matters most — a genuinely fair contractor agreement, whic
 ![Clean](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/shot-04-clean.png)
 
 A tool that cries wolf gets uninstalled the first time it wastes an evening on a good contract.
+
+And an internship offer letter, where the header reads `DOC OFFER LETTER OR EMPLOYMENT TERMS`
+and the amber panel counts fields nobody has filled in. Different document, different rules:
+
+![Offer letter](https://raw.githubusercontent.com/soumwadeep/RedPen/main/assets/shot-06-offer-letter.png)
+
+The top STOP finding on that page is *"The start date is before the letter itself"* — a date
+anomaly no keyword rule could catch — and below it, that the employer holds the intern's
+original degree certificates.
 
 ```bash
 git clone https://github.com/soumwadeep/RedPen.git && cd RedPen
